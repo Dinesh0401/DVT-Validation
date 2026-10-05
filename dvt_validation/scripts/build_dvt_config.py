@@ -16,33 +16,19 @@ import json
 import re
 import sys
 from pathlib import Path
+import yaml
 
-BASE = Path(__file__).resolve().parent.parent
-GENERATED = BASE / "generated"
-DVT_CONFIGS_DIR = GENERATED / "dvt_configs"
+# Ensure scripts dir is in sys.path
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
-DEFAULT_PORTS = {
-    "oracle": 1521,
-    "postgresql": 5432,
-    "postgres": 5432,
-    "mysql": 3306,
-    "sqlserver": 1433,
-    "db2": 50000,
-    "hive": 10000,
-}
-
-
-def parse_relation(rel_str: str) -> tuple:
-    """Parses relations like '\"SCHEMA\".\"TABLE\"' or 'schema.table' into (schema, table)."""
-    if not rel_str:
-        return ("", "")
-    clean = rel_str.replace('\\', '').replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()
-    parts = [p.strip() for p in clean.split('.') if p.strip()]
-    if len(parts) >= 2:
-        return (parts[-2], parts[-1])
-    elif len(parts) == 1:
-        return ("", parts[0])
-    return ("", clean)
+from common import (
+    BASE, GENERATED, DVT_CONFIGS_DIR,
+    DEFAULT_PORTS,
+    parse_relation_identifier,
+    dvt_engine_type,
+)
 
 
 def build_validation_plan(manifest: dict) -> dict:
@@ -50,8 +36,8 @@ def build_validation_plan(manifest: dict) -> dict:
     src_engine = meta.get("detected_source_engine", "SourceDB")
     tgt_engine = meta.get("detected_target_engine", "TargetDB")
 
-    src_engine_clean = "Postgres" if tgt_engine.lower() in ("postgresql", "postgres") else tgt_engine
-    tgt_engine_clean = "Postgres" if tgt_engine.lower() in ("postgresql", "postgres") else tgt_engine
+    src_dvt_type = dvt_engine_type(src_engine)
+    tgt_dvt_type = dvt_engine_type(tgt_engine)
 
     src_conn_name = f"{src_engine.lower()}_source"
     tgt_conn_name = f"{tgt_engine.lower()}_target"
@@ -78,7 +64,7 @@ def build_validation_plan(manifest: dict) -> dict:
         "connections": {
             "source": {
                 "name": src_conn_name,
-                "type": src_engine,
+                "type": src_dvt_type,
                 "host": "${" + src_engine.upper() + "_HOST}",
                 "port": "${" + src_engine.upper() + f"_PORT:-{src_default_port}" + "}",
                 "database": "${" + src_engine.upper() + "_DATABASE}",
@@ -87,7 +73,7 @@ def build_validation_plan(manifest: dict) -> dict:
             },
             "target": {
                 "name": tgt_conn_name,
-                "type": tgt_engine_clean,
+                "type": tgt_dvt_type,
                 "host": "${" + tgt_engine.upper() + "_HOST}",
                 "port": "${" + tgt_engine.upper() + f"_PORT:-{tgt_default_port}" + "}",
                 "database": "${" + tgt_engine.upper() + "_DATABASE}",
@@ -115,10 +101,10 @@ def build_validation_plan(manifest: dict) -> dict:
         # Resolve Source and Target relations dynamically
         raw_rels = d.get("raw_relations", [])
         src_raw = raw_rels[0].get("relation", "") if raw_rels else s.get("source", "")
-        src_schema, src_table = parse_relation(src_raw)
+        src_schema, src_table = parse_relation_identifier(src_raw)
 
         tgt_rel = d.get("target_relation") or s.get("target", "")
-        tgt_schema, tgt_table = parse_relation(tgt_rel)
+        tgt_schema, tgt_table = parse_relation_identifier(tgt_rel)
 
         pk = s.get("primary_key")
         primary_keys = [pk] if pk else []
@@ -275,7 +261,7 @@ def generate_native_dvt_configs(plan: dict):
             }
         }
         with open(DVT_CONFIGS_DIR / f"schema_{jid}.yaml", "w", encoding="utf-8") as f:
-            json.dump(schema_cfg, f, indent=2)
+            yaml.dump(schema_cfg, f, sort_keys=False, indent=2)
 
         data_cfg = {
             "data_validation": {
@@ -290,18 +276,22 @@ def generate_native_dvt_configs(plan: dict):
             }
         }
         with open(DVT_CONFIGS_DIR / f"row_{jid}.yaml", "w", encoding="utf-8") as f:
-            json.dump(data_cfg, f, indent=2)
+            yaml.dump(data_cfg, f, sort_keys=False, indent=2)
 
 
 def main():
-    with open(GENERATED / "jobs.json", "r", encoding="utf-8") as f:
+    manifest_path = GENERATED / "jobs.json"
+    if not manifest_path.exists():
+        print(f"FATAL: {manifest_path} not found. Please run extract_jobs.py first.", file=sys.stderr)
+        return 1
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     plan = build_validation_plan(manifest)
 
     # Write plan YAML
     plan_yaml_path = GENERATED / "dvt_validation_plan.yaml"
-    import yaml
     with open(plan_yaml_path, "w", encoding="utf-8") as f:
         yaml.dump(plan, f, sort_keys=False, indent=2)
 

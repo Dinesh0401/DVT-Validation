@@ -10,63 +10,29 @@ Outputs (generated/):
   jobs.json — complete structured manifest of all logical jobs.
 """
 
+import argparse
 import json
 import re
 import sys
 from pathlib import Path
 import yaml
 
-BASE = Path(__file__).resolve().parent.parent
-INPUT = BASE / "input"
-GENERATED = BASE / "generated"
+# Ensure scripts dir is in sys.path
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
-# Driver-to-Engine mapping for dynamic database engine resolution
-JDBC_DRIVER_ENGINE_MAP = {
-    "oracle.jdbc.oracledriver": "Oracle",
-    "org.postgresql.driver": "PostgreSQL",
-    "com.mysql.cj.jdbc.driver": "MySQL",
-    "com.mysql.jdbc.driver": "MySQL",
-    "com.microsoft.sqlserver.jdbc.sqlserverdriver": "SQLServer",
-    "org.apache.hive.jdbc.hivedriver": "Hive",
-    "com.snowflake.client.jdbc.snowflakedriver": "Snowflake",
-    "com.ibm.db2.jcc.db2driver": "DB2",
-    "org.sqlite.jdbc": "SQLite",
-    "org.mariadb.jdbc.driver": "MariaDB",
-}
+from common import (
+    BASE, INPUT, GENERATED,
+    infer_engine,
+    parse_relation_identifier,
+    normalize_relation,
+    resolve_input_paths,
+)
 
 
 # ---------------------------------------------------------------------------
-# Helper: Universal Relation Parser & Normalizer
-# ---------------------------------------------------------------------------
-def parse_relation_identifier(rel_str: str) -> tuple:
-    """
-    Parses any SQL relation string into (catalog/schema, table).
-    Handles 'catalog.schema.table', '"schema"."table"', '[schema].[table]', bare 'table'.
-    """
-    if not rel_str:
-        return ("", "")
-    # Remove quotes, brackets, escapes
-    cleaned = rel_str.replace('\\', '').replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()
-    parts = [p.strip() for p in cleaned.split('.') if p.strip()]
-    if len(parts) >= 2:
-        return (parts[-2], parts[-1])
-    elif len(parts) == 1:
-        return ("", parts[0])
-    return ("", cleaned)
-
-
-def normalize_relation(rel_str: str) -> str:
-    """Normalizes relation name for dialect-agnostic comparison."""
-    if not rel_str:
-        return ""
-    schema, table = parse_relation_identifier(rel_str)
-    if schema:
-        return f"{schema.lower()}.{table.lower()}"
-    return table.lower()
-
-
-# ---------------------------------------------------------------------------
-# 1. Parse duckdb.yaml dynamically
+# 1. Parse contract (e.g. duckdb.yaml) dynamically
 # ---------------------------------------------------------------------------
 def extract_duckdb(path: Path) -> dict:
     with open(path, "r", encoding="utf-8") as f:
@@ -125,19 +91,19 @@ def extract_duckdb(path: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 2. Parse seatunnel.conf with Generic Stateful HOCON Tokenizer
+# 2. Parse execution plan (seatunnel.conf) with Generic Stateful Tokenizer
 # ---------------------------------------------------------------------------
 def extract_seatunnel(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
 
-    # Detect engines from top-level metadata comments
+    # Detect engines from top-level metadata comments if present
     src_eng_m = re.search(r'#\s*source engine\s*:\s*([A-Za-z0-9_]+)', text, re.IGNORECASE)
     tgt_eng_m = re.search(r'#\s*target engine\s*:\s*([A-Za-z0-9_]+)', text, re.IGNORECASE)
     acq_m = re.search(r'#\s*acquisition\s*:\s*([A-Za-z0-9_]+)', text, re.IGNORECASE)
 
     meta = {
-        "source_engine": src_eng_m.group(1).title() if src_eng_m else None,
-        "target_engine": tgt_eng_m.group(1).title() if tgt_eng_m else None,
+        "source_engine": infer_engine(comment_str=src_eng_m.group(1)) if src_eng_m else None,
+        "target_engine": infer_engine(comment_str=tgt_eng_m.group(1)) if tgt_eng_m else None,
         "acquisition": acq_m.group(1).lower() if acq_m else "snapshot",
     }
 
@@ -220,32 +186,47 @@ def extract_seatunnel(path: Path) -> dict:
         tgt_m = re.search(r'#\s*target\s*:\s*(.+)', header)
         pk_m = re.search(r'#\s*primary key\s*:\s*(.+)', header)
 
-        # Detect JDBC drivers inside the block
+        # Detect JDBC drivers and URLs inside the block
         src_driver_m = re.search(r'source\s*\{[^}]*?driver\s*=\s*"([^"]+)"', content, re.DOTALL | re.IGNORECASE)
         tgt_driver_m = re.search(r'sink\s*\{[^}]*?driver\s*=\s*"([^"]+)"', content, re.DOTALL | re.IGNORECASE)
+        src_url_m = re.search(r'source\s*\{[^}]*?url\s*=\s*"([^"]+)"', content, re.DOTALL | re.IGNORECASE)
+        tgt_url_m = re.search(r'sink\s*\{[^}]*?url\s*=\s*"([^"]+)"', content, re.DOTALL | re.IGNORECASE)
 
-        # Infer engine from driver if not already detected
-        if src_driver_m and not meta["source_engine"]:
-            meta["source_engine"] = JDBC_DRIVER_ENGINE_MAP.get(src_driver_m.group(1).lower())
-        if tgt_driver_m and not meta["target_engine"]:
-            meta["target_engine"] = JDBC_DRIVER_ENGINE_MAP.get(tgt_driver_m.group(1).lower())
+        # Dynamically infer engine if not already detected from headers
+        if not meta["source_engine"]:
+            src_driver = src_driver_m.group(1) if src_driver_m else ""
+            src_url = src_url_m.group(1) if src_url_m else ""
+            eng = infer_engine(driver_str=src_driver, url_str=src_url)
+            if eng != "GenericSQL":
+                meta["source_engine"] = eng
 
-        # Extract statements inside HOCON
-        create_table_m = re.search(r'create-table\.sql\s*=\s*"""(.*?)"""', content, re.DOTALL)
-        if not create_table_m:
-            create_table_m = re.search(r'create_table\s*=\s*"""(.*?)"""', content, re.DOTALL)
+        if not meta["target_engine"]:
+            tgt_driver = tgt_driver_m.group(1) if tgt_driver_m else ""
+            tgt_url = tgt_url_m.group(1) if tgt_url_m else ""
+            eng = infer_engine(driver_str=tgt_driver, url_str=tgt_url)
+            if eng != "GenericSQL":
+                meta["target_engine"] = eng
 
-        source_query_m = re.search(r'source\s*\{[^}]*?Jdbc\s*\{.*?query\s*=\s*"""(.*?)""".*?\}', content, re.DOTALL)
-        dml_m = re.search(r'dml\s*\{.*?statement\s*=\s*"""(.*?)""".*?\}', content, re.DOTALL)
-        transform_m = re.search(r'transform\s*\{.*?query\s*=\s*"([^"]+)".*?\}', content, re.DOTALL)
+        # Extract statements inside HOCON (supports """ or " quoting)
+        create_table_m = re.search(r'(?:create-table\.sql|create_table|create_table_sql)\s*=\s*(?:"""(.*?)"""|"([^"]+)")', content, re.DOTALL)
+        create_table_sql = (create_table_m.group(1) or create_table_m.group(2)).strip() if create_table_m else None
+
+        source_query_m = re.search(r'source\s*\{[^}]*?Jdbc\s*\{.*?query\s*=\s*(?:"""(.*?)"""|"([^"]+)").*?\}', content, re.DOTALL)
+        source_query_sql = (source_query_m.group(1) or source_query_m.group(2)).strip() if source_query_m else None
+
+        dml_m = re.search(r'dml\s*\{.*?statement\s*=\s*(?:"""(.*?)"""|"([^"]+)").*?\}', content, re.DOTALL)
+        dml_statement = (dml_m.group(1) or dml_m.group(2)).strip() if dml_m else None
+
+        transform_m = re.search(r'transform\s*\{.*?query\s*=\s*(?:"""(.*?)"""|"([^"]+)").*?\}', content, re.DOTALL)
+        transform_query = (transform_m.group(1) or transform_m.group(2)).strip() if transform_m else None
 
         # Extract target relation inside block
         target_in_block = re.search(r'target\s*=\s*["\']?\\?"?([^"\'\\]+)\\?"?["\']?', content)
 
         # Extract primary key from DDL if defined
         pk_from_ddl = None
-        if create_table_m:
-            pk_match = re.search(r'PRIMARY\s+KEY\s*\(\s*["\']?([^"\'\)]+)["\']?\s*\)', create_table_m.group(1), re.IGNORECASE)
+        if create_table_sql:
+            pk_match = re.search(r'PRIMARY\s+KEY\s*\(\s*["\']?([^"\'\)]+)["\']?\s*\)', create_table_sql, re.IGNORECASE)
             if pk_match:
                 pk_from_ddl = pk_match.group(1).strip()
 
@@ -259,10 +240,10 @@ def extract_seatunnel(path: Path) -> dict:
             "target": tgt_m.group(1).strip() if tgt_m else None,
             "primary_key": pk_from_ddl or (pk_m.group(1).strip() if pk_m else None),
             "target_in_block": target_in_block.group(1).strip() if target_in_block else None,
-            "create_table_sql": create_table_m.group(1).strip() if create_table_m else None,
-            "source_query": source_query_m.group(1).strip() if source_query_m else None,
-            "dml_statement": dml_m.group(1).strip() if dml_m else None,
-            "transform_query": transform_m.group(1).strip() if transform_m else None,
+            "create_table_sql": create_table_sql,
+            "source_query": source_query_sql,
+            "dml_statement": dml_statement,
+            "transform_query": transform_query,
             "content": content,
         }
 
@@ -309,7 +290,7 @@ def classify_and_cross_verify(duckdb_data: dict, seatunnel_data: dict) -> list:
 
     for jid, d_info in duckdb_jobs.items():
         s_info = seatunnel_jobs.get(jid)
-        
+
         # If not matched by exact job_id, attempt fallback match by normalized target relation
         target_duck = normalize_relation(d_info.get("target_relation", ""))
         if not s_info:
@@ -394,14 +375,32 @@ def classify_and_cross_verify(duckdb_data: dict, seatunnel_data: dict) -> list:
 # Main Entry Point
 # ---------------------------------------------------------------------------
 def main():
-    duckdb_data = extract_duckdb(INPUT / "duckdb.yaml")
-    seatunnel_data = extract_seatunnel(INPUT / "seatunnel.conf")
+    parser = argparse.ArgumentParser(description="Generic Stage-1 Preflight Manifest Extractor (No Hardcoding)")
+    parser.add_argument("--contract", "-c", help="Path to migration contract YAML (e.g. duckdb.yaml)")
+    parser.add_argument("--plan", "-p", help="Path to execution plan (e.g. seatunnel.conf)")
+    args = parser.parse_args()
+
+    contract_path, plan_path = resolve_input_paths(args.contract, args.plan)
+
+    if not contract_path or not contract_path.exists():
+        print(f"FATAL: Migration contract YAML not found. Checked: {contract_path}", file=sys.stderr)
+        return 1
+
+    if not plan_path or not plan_path.exists():
+        print(f"FATAL: Migration execution plan not found. Checked: {plan_path}", file=sys.stderr)
+        return 1
+
+    print(f"Loading Contract : {contract_path}")
+    print(f"Loading Plan     : {plan_path}")
+
+    duckdb_data = extract_duckdb(contract_path)
+    seatunnel_data = extract_seatunnel(plan_path)
     classified = classify_and_cross_verify(duckdb_data, seatunnel_data)
 
     manifest = {
         "metadata": {
-            "source_duckdb": str(INPUT / "duckdb.yaml"),
-            "source_seatunnel": str(INPUT / "seatunnel.conf"),
+            "source_duckdb": str(contract_path),
+            "source_seatunnel": str(plan_path),
             "detected_source_engine": seatunnel_data["metadata"].get("source_engine") or "Unknown",
             "detected_target_engine": seatunnel_data["metadata"].get("target_engine") or "Unknown",
             "acquisition": duckdb_data.get("acquisition") or seatunnel_data["metadata"].get("acquisition"),
@@ -426,8 +425,8 @@ def main():
     print(f"  Source Engine   : {manifest['metadata']['detected_source_engine']}")
     print(f"  Target Engine   : {manifest['metadata']['detected_target_engine']}")
     print(f"  Active Verified : {counts['READY']}")
-    print(f"  Blocked Jobs    : {counts['BLOCKED']} — {[j['job_id'] for j in classified if j['status'] == 'BLOCKED']}")
-    print(f"  Review Jobs     : {counts['REVIEW']} — {[j['job_id'] for j in classified if j['status'] == 'REVIEW']}")
+    print(f"  Blocked Jobs    : {counts['BLOCKED']} -- {[j['job_id'] for j in classified if j['status'] == 'BLOCKED']}")
+    print(f"  Review Jobs     : {counts['REVIEW']} -- {[j['job_id'] for j in classified if j['status'] == 'REVIEW']}")
     print(f"Wrote validated manifest to {out_path}")
     return 0
 

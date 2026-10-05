@@ -3,7 +3,7 @@
     "source_duckdb": "C:\\Users\\sjdin\\DVT Validation\\DVT-Validation\\dvt_validation\\input\\duckdb.yaml",
     "source_seatunnel": "C:\\Users\\sjdin\\DVT Validation\\DVT-Validation\\dvt_validation\\input\\seatunnel.conf",
     "detected_source_engine": "Oracle",
-    "detected_target_engine": "Postgresql",
+    "detected_target_engine": "PostgreSQL",
     "acquisition": "snapshot",
     "bindings": {
       "run_scn": "RUN_RECORD.oracle_scn"

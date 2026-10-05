@@ -1,8 +1,8 @@
-# Stage-1 Pre-migration Preflight Verification Report (Oracle -> Postgresql)
+# Stage-1 Pre-migration Preflight Verification Report (Oracle -> PostgreSQL)
 
-**Execution Timestamp:** 2026-10-05 22:05:12
+**Execution Timestamp:** 2026-10-05 22:11:19
 **Scope:** Pre-migration Contract vs Execution Plan Preflight (Zero DB Access)
-**Engines:** Source = `Oracle`, Target = `Postgresql`
+**Engines:** Source = `Oracle`, Target = `PostgreSQL`
 
 ---
 
@@ -25,17 +25,17 @@
 | Layer | Scope | Checks Performed | Result |
 | :--- | :--- | :--- | :--- |
 | **Layer 1: Structural Integrity** | YAML & HOCON syntax | Tokenization, brace balancing, job definitions | **PASS** (11 active, 1 blocked) |
-| **Layer 2: Relation & Entity Mapping** | Source & Target relations | Oracle schema/table -> Postgresql schema/table | **PASS** (11/11 verified) |
+| **Layer 2: Relation & Entity Mapping** | Source & Target relations | Oracle schema/table -> PostgreSQL schema/table | **PASS** (11/11 verified) |
 | **Layer 3: Snapshot Binding** | Pinned read consistency | Verified snapshot parameter on all table reads | **PASS** (11/11 verified) |
 | **Layer 4: Semantic Query Equivalence** | AST & dialect analysis | Functions, types, where-filters, regex, hashes | **PASS (100% Semantic Match)** |
-| **Layer 5: Target DDL & Schema Consistency** | Postgresql DDL vs DML | Table names, column counts, column orders, types | **PASS** (11/11 exact match) |
+| **Layer 5: Target DDL & Schema Consistency** | PostgreSQL DDL vs DML | Table names, column counts, column orders, types | **PASS** (11/11 exact match) |
 | **Layer 6: DVT Execution Readiness** | DVT plan & CLI commands | Schema, Row, Column, Custom-Query coverage | **PASS** (Ready for dry-run) |
 
 ---
 
 ## 2. Table-by-Table Verification Evidence
 
-| Job ID | Order | Oracle Source | Postgresql Target | Primary Key | Snapshot Bound | Query Semantics | DDL Columns | Checks |
+| Job ID | Order | Oracle Source | PostgreSQL Target | Primary Key | Snapshot Bound | Query Semantics | DDL Columns | Checks |
 | :--- | :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
 | **JOB-shop_audit_event** | 1 | `SHOP.AUDIT_EVENT` | `shop.audit_event` | `event_id` | ✅ Bound | ✅ Match | 100% | 11 |
 | **JOB-shop_branch** | 2 | `SHOP.BRANCH` | `shop.branch` | `None` | ✅ Bound | ✅ Match | 100% | 8 |
@@ -74,6 +74,6 @@
 ## 4. DVT Stage-2 Execution Plan
 
 The preflight pipeline has dynamically generated the following execution artifacts in `generated/`:
-1. **`dvt_validation_plan.yaml`**: Complete validation specification mapping Oracle source $\to$ Postgresql target connections, schemas, tables, primary keys, snapshot bindings, and check coverage.
+1. **`dvt_validation_plan.yaml`**: Complete validation specification mapping Oracle source $\to$ PostgreSQL target connections, schemas, tables, primary keys, snapshot bindings, and check coverage.
 2. **`dvt_cli_commands.sh` / `dvt_cli_commands.bat`**: Ready-to-run Google Cloud DVT CLI commands supporting `--dry-run` mode.
 3. **`dvt_configs/*.yaml`**: Native DVT config files for schema and row validation.

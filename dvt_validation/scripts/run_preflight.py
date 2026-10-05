@@ -20,23 +20,31 @@ Exit Codes:
   2 = REVIEW  : Functional with warnings (dialect nuances requiring human sign-off).
 """
 
+import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
 
-BASE = Path(__file__).resolve().parent.parent
-SCRIPTS = BASE / "scripts"
-GENERATED = BASE / "generated"
-REPORTS = BASE / "reports"
+# Ensure scripts dir is in sys.path
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from common import (
+    BASE, SCRIPTS, GENERATED, REPORTS,
+    resolve_input_paths,
+)
 
 
-def run_substep(script_name: str) -> int:
-    print(f"\n{'='*70}")
-    print(f"STAGE-1 SUBSTEP: {script_name}.py")
-    print('='*70)
+def run_substep(script_name: str, extra_args: list = None) -> int:
+    print(f"\n{'='*70}", flush=True)
+    print(f"STAGE-1 SUBSTEP: {script_name}.py", flush=True)
+    print('='*70, flush=True)
     cmd = [sys.executable, str(SCRIPTS / f"{script_name}.py")]
+    if extra_args:
+        cmd.extend(extra_args)
     res = subprocess.run(cmd)
     return res.returncode
 
@@ -47,7 +55,6 @@ def generate_executive_report(manifest: dict, query_cmp: list) -> Path:
 
     jobs = manifest["jobs"]
     meta = manifest["metadata"]
-    summary = meta.get("duckdb_summary", {})
 
     src_engine = meta.get("detected_source_engine", "SourceDB")
     tgt_engine = meta.get("detected_target_engine", "TargetDB")
@@ -180,11 +187,27 @@ def generate_executive_report(manifest: dict, query_cmp: list) -> Path:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Stage-1 Preflight Orchestrator (No Hardcoding)")
+    parser.add_argument("--contract", "-c", help="Path to migration contract YAML (e.g. duckdb.yaml)")
+    parser.add_argument("--plan", "-p", help="Path to execution plan (e.g. seatunnel.conf)")
+    args = parser.parse_args()
+
+    contract_path, plan_path = resolve_input_paths(args.contract, args.plan)
+
+    if not contract_path or not contract_path.exists():
+        print(f"FATAL: Migration contract YAML not found. Checked: {contract_path}", file=sys.stderr)
+        return 1
+
+    if not plan_path or not plan_path.exists():
+        print(f"FATAL: Migration execution plan not found. Checked: {plan_path}", file=sys.stderr)
+        return 1
+
     GENERATED.mkdir(parents=True, exist_ok=True)
     REPORTS.mkdir(parents=True, exist_ok=True)
 
     # 1. Step 1: Extract & Cross-Verify Jobs Dynamically
-    code1 = run_substep("extract_jobs")
+    extract_args = ["--contract", str(contract_path), "--plan", str(plan_path)]
+    code1 = run_substep("extract_jobs", extra_args=extract_args)
     if code1 != 0:
         print("FATAL: extract_jobs failed — aborting preflight.")
         return 1
@@ -219,8 +242,8 @@ def main():
     print('='*70)
     print(f"Total Logical Jobs : {len(jobs)}")
     print(f"  Active Verified  : {len(ready)}")
-    print(f"  Blocked Jobs     : {len(blocked)} — {[j['job_id'] for j in blocked]}")
-    print(f"  Query Reviews    : {len(q_review)} — {[q['job_id'] for q in q_review]}")
+    print(f"  Blocked Jobs     : {len(blocked)} -- {[j['job_id'] for j in blocked]}")
+    print(f"  Query Reviews    : {len(q_review)} -- {[q['job_id'] for q in q_review]}")
     print(f"Evidence Report    : {report_path}")
     print('='*70)
 

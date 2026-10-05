@@ -21,8 +21,15 @@ import re
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-GENERATED = BASE / "generated"
+# Ensure scripts dir is in sys.path
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from common import (
+    BASE, GENERATED,
+    parse_relation_identifier,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -32,12 +39,12 @@ def verify_snapshot_binding(query_sql: str, declared_bindings: dict, source_engi
     if not query_sql:
         return {"bound": False, "tables": [], "unbound_tables": [], "details": "No execution query"}
 
-    # Derive snapshot parameter names from contract bindings (e.g. run_scn, snapshot_ts)
+    # Derive snapshot parameter names from contract bindings (e.g. run_scn, snapshot_ts, as_of_time)
     binding_params = list(declared_bindings.keys()) if declared_bindings else ["run_scn"]
 
-    # Match all table references following FROM or JOIN
+    # Match all table references following FROM or JOIN in any quoting style
     from_join_pattern = re.compile(
-        r'(?:FROM|JOIN)\s+("?[A-Za-z0-9_]+"?"?\."?[A-Za-z0-9_]+"?)(\s+AS\s+OF\s+[^\n,()]+)?',
+        r'(?:FROM|JOIN)\s+([a-zA-Z0-9_"\.\`\[\]]+)(\s+AS\s+OF\s+[^\n,()]+)?',
         re.IGNORECASE
     )
     matches = from_join_pattern.findall(query_sql)
@@ -46,7 +53,7 @@ def verify_snapshot_binding(query_sql: str, declared_bindings: dict, source_engi
     unbound_tables = []
 
     for tbl, clause in matches:
-        tbl_clean = tbl.replace('"', '').replace("'", "").strip()
+        tbl_clean = tbl.replace('"', '').replace("'", "").replace('[', '').replace(']', '').replace('`', '').strip()
         # Verify if any declared snapshot parameter is bound
         has_param = any(f"${{{p}}}" in (clause or "") for p in binding_params)
 
@@ -155,7 +162,7 @@ def normalize_for_semantic_comparison(sql: str, binding_params: list) -> str:
     s = re.sub(r'\bDESC\s+NULLS\s+FIRST\b', 'DESC', s, flags=re.IGNORECASE)
 
     # Normalize quoted identifiers: "identifier" -> identifier
-    s = re.sub(r'"([^"]*)"', lambda m: m.group(1).lower(), s)
+    s = re.sub(r'["`\[\]]([^"`\[\]]*)["`\[\]]', lambda m: m.group(1).lower(), s)
 
     # Normalize table alias 'AS' keyword differences
     s = re.sub(r'\bAS\s+([a-z0-9_]+)\b', r'\1', s, flags=re.IGNORECASE)
@@ -190,7 +197,12 @@ def compare_sql(sql_duck: str, sql_seat: str, binding_params: list) -> dict:
 # Main Comparison Runner
 # ---------------------------------------------------------------------------
 def main():
-    with open(GENERATED / "jobs.json", "r", encoding="utf-8") as f:
+    manifest_path = GENERATED / "jobs.json"
+    if not manifest_path.exists():
+        print(f"FATAL: {manifest_path} not found. Please run extract_jobs.py first.", file=sys.stderr)
+        return 1
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     meta = manifest["metadata"]
@@ -263,8 +275,8 @@ def main():
 
     print(f"Generic Semantic Query Comparison ({len(results)} jobs):")
     print(f"  SEMANTIC_MATCH : {len(matched)}")
-    print(f"  REVIEW         : {len(review)} — {[r['job_id'] for r in review]}")
-    print(f"  BLOCKED        : {len(blocked)} — {[r['job_id'] for r in blocked]}")
+    print(f"  REVIEW         : {len(review)} -- {[r['job_id'] for r in review]}")
+    print(f"  BLOCKED        : {len(blocked)} -- {[r['job_id'] for r in blocked]}")
     print(f"Wrote query comparison report to {out_path}")
     return 0 if len(review) == 0 else 2
 

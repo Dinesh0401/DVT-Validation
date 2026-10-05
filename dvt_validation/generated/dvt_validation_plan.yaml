@@ -1,7 +1,7 @@
 metadata:
-  title: Stage-1 Pre-migration DVT Validation Plan (Oracle -> Postgresql)
+  title: Stage-1 Pre-migration DVT Validation Plan (Oracle -> PostgreSQL)
   source_engine: Oracle
-  target_engine: Postgresql
+  target_engine: PostgreSQL
   generated_by: Stage-1 Generic Preflight Pipeline
   convention:
     zero_rows_means_pass: true
