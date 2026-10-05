@@ -1,0 +1,388 @@
+metadata:
+  title: Stage-1 Pre-migration DVT Validation Plan (Oracle -> Postgresql)
+  source_engine: Oracle
+  target_engine: Postgresql
+  generated_by: Stage-1 Generic Preflight Pipeline
+  convention:
+    zero_rows_means_pass: true
+    nonzero_rows_means_fail: true
+    acquisition: snapshot
+    snapshot_binding: ${run_scn}
+connections:
+  source:
+    name: oracle_source
+    type: Oracle
+    host: ${ORACLE_HOST}
+    port: ${ORACLE_PORT:-1521}
+    database: ${ORACLE_DATABASE}
+    user: ${ORACLE_DB_USER}
+    password: ${ORACLE_DB_PASSWORD}
+  target:
+    name: postgresql_target
+    type: Postgres
+    host: ${POSTGRESQL_HOST}
+    port: ${POSTGRESQL_PORT:-5432}
+    database: ${POSTGRESQL_DATABASE}
+    user: ${POSTGRESQL_DB_USER}
+    password: ${POSTGRESQL_DB_PASSWORD}
+jobs:
+- job_id: JOB-shop_audit_event
+  order: 1
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: AUDIT_EVENT
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    \"EVENT_ID\" AS \"event_id\",\n    CAST(\"AMOUNT\" AS NUMERIC(12,\
+      \ 2)) AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn} \"\
+      t0\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: audit_event
+  primary_keys:
+  - event_id
+  validation_strategy:
+    is_complex_transformation: false
+    native_dvt_schema: true
+    native_dvt_row: true
+    dvt_custom_query: false
+  contract_coverage:
+    total_checks: 11
+    checks_with_sql: 5
+    runtime_only_checks: 6
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_audit_event
+    - V-DELIVERY-JOB-shop_audit_event
+    - V-FIDELITY-JOB-shop_audit_event
+    - V-FIDELITY-NULL-JOB-shop_audit_event-event_id
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_audit_event
+- job_id: JOB-shop_branch
+  order: 2
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: BRANCH
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    TRIM(\"\
+      CODE\") AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn} \"t0\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: branch
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: false
+    native_dvt_schema: true
+    native_dvt_row: true
+    dvt_custom_query: false
+  contract_coverage:
+    total_checks: 8
+    checks_with_sql: 2
+    runtime_only_checks: 6
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_branch
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_branch
+- job_id: JOB-shop_customer
+  order: 3
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: CUSTOMER
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    \"FIRST_NAME\" AS \"first_name\",\n    \"LAST_NAME\" AS \"\
+      last_name\",\n    \"MOBILE\" AS \"mobile\",\n    \"LANDLINE\" AS \"landline\"\
+      ,\n    \"VIP\" AS \"vip\",\n    \"FULL_ADDRESS\" AS \"full_address\",\n    CAST(\"\
+      AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    CAST(SUBSTR(TRIM(\"COUNTRY\"\
+      ), 1, 2) AS CHAR(2)) AS \"country_code\",\n    STANDARD_HASH(CAST(\"EMAIL\"\
+      \ AS STRING), 'SHA256') AS \"email\",\n    \"STATUS\" AS \"status_code\",\n\
+      \    CAST(\"CREATED\" AS DATE) AS \"created_on\",\n    CAST((\n      TRIM(NULLIF(\"\
+      FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n    ) AS VARCHAR(160))\
+      \ AS \"full_name\",\n    COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\"\
+      ,\n    CAST(CASE\n      WHEN \"STATUS\" = 'A'\n      THEN 'active'\n      WHEN\
+      \ \"STATUS\" = 'C'\n      THEN 'closed'\n      ELSE 'unknown'\n    END AS VARCHAR(20))\
+      \ AS \"status_label\",\n    CAST(CURRENT_TIMESTAMP AS TIMESTAMP WITH TIME ZONE)\
+      \ AS \"loaded_at\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)',\
+      \ 1, 1) AS VARCHAR(120)) AS \"street\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\"\
+      , '(?:,\\ ){1}(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(80)) AS \"city\",\n    CASE\n\
+      \      WHEN (\n        TRUNC((\n          LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"\
+      FULL_ADDRESS\", ', ', ''))\n        ) / 2) + 1\n      ) > 2\n      THEN 1\n\
+      \      ELSE NULL\n    END AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\"\
+      .\"CUSTOMER\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    (\n      \"STATUS\"\
+      \ <> 'X' AND (\n        \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n\
+      \      )\n    )"
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: client
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: false
+    native_dvt_schema: true
+    native_dvt_row: true
+    dvt_custom_query: false
+  contract_coverage:
+    total_checks: 15
+    checks_with_sql: 4
+    runtime_only_checks: 11
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_customer
+    - V-FIDELITY-NULL-JOB-shop_customer-created_on
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_customer
+    - V-COLUMNSPLIT-customer-table
+- job_id: JOB-shop_order_summary
+  order: 4
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: ORDER_SUMMARY
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"s0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n\
+      \  FROM (\n    SELECT\n      ORDER_DATE,\n      SUM(AMOUNT) AS TOTAL\n    FROM\
+      \ SHOP.ORDERS AS OF SCN ${run_scn}\n    GROUP BY\n      ORDER_DATE\n  ) \"s0\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: order_summary
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 7
+    checks_with_sql: 1
+    runtime_only_checks: 6
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_order_summary
+- job_id: JOB-shop_orders
+  order: 5
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: ORDERS
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    *\n  FROM (\n    SELECT\n      \"NARRATIVE\" AS \"narrative\"\
+      ,\n      \"ORDER_DATE\" AS \"order_date\",\n      \"SHOP.BRANCH\" AS \"shop.branch\"\
+      ,\n      \"BRANCH_CODE\" AS \"branch_code\",\n      COALESCE(\"CURRENCY\", 'EUR')\
+      \ AS \"currency\",\n      (\n        \"SHIP_DATE\" + INTERVAL '1' DAY\n    \
+      \  ) AS \"ship_date\",\n      CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL'\
+      \ END AS \"priority\",\n      CAST(\"AMOUNT\" AS NUMERIC(14, 4)) AS \"amount\"\
+      ,\n      CAST('shop-eu' AS VARCHAR(10)) AS \"tenant_id\",\n      CAST(CASE\n\
+      \        WHEN \"lk1\".\"__lk1_n\" > 1\n        THEN 'UNKNOWN'\n        ELSE\
+      \ COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n      END AS VARCHAR(80)) AS \"\
+      branch_name\"\n    FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn} \"t0\"\n  \
+      \  LEFT JOIN (\n      SELECT\n        \"CODE\" AS \"__lk1_k0\",\n        MAX(\"\
+      NAME\") AS \"__lk1_v0\",\n        COUNT(*) AS \"__lk1_n\"\n      FROM \"SHOP\"\
+      .\"BRANCH\" AS OF SCN ${run_scn}\n      GROUP BY\n        \"CODE\"\n    ) \"\
+      lk1\"\n      ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n  ) \"__transformed\"\
+      \n  WHERE\n    (\n      \"__transformed\".\"ship_date\" >= \"__transformed\"\
+      .\"order_date\"\n      OR \"__transformed\".\"ship_date\" IS NULL\n    )"
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: orders
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 11
+    checks_with_sql: 3
+    runtime_only_checks: 8
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_orders
+    - V-STRICT-0-AGGREGATE-JOB-shop_orders
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_orders
+- job_id: JOB-shop_orders_2023--merged
+  order: 6
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: ORDERS_2023
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"u0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n\
+      \  FROM (\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"\
+      SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n    UNION ALL\n    SELECT\n   \
+      \   \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2024\" AS\
+      \ OF SCN ${run_scn}\n  ) \"u0\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: orders_history
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 8
+    checks_with_sql: 1
+    runtime_only_checks: 7
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_orders_2023--merged
+- job_id: JOB-shop_party--company
+  order: 7
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: PARTY
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"\
+      SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" =\
+      \ 'COMPANY'"
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: party_company
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: false
+    native_dvt_schema: true
+    native_dvt_row: true
+    dvt_custom_query: false
+  contract_coverage:
+    total_checks: 8
+    checks_with_sql: 1
+    runtime_only_checks: 7
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_party--company
+- job_id: JOB-shop_party--person
+  order: 8
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: PARTY
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"\
+      SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" =\
+      \ 'PERSON'"
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: party_person
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: false
+    native_dvt_schema: true
+    native_dvt_row: true
+    dvt_custom_query: false
+  contract_coverage:
+    total_checks: 8
+    checks_with_sql: 1
+    runtime_only_checks: 7
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_party--person
+- job_id: JOB-shop_price_history
+  order: 9
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: PRICE_HISTORY
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n    CAST(\"d0\"\
+      .\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      *\n\
+      \    FROM (\n      SELECT\n        p.*,\n        ROW_NUMBER() OVER (PARTITION\
+      \ BY PRODUCT_ID ORDER BY CHANGED_AT DESC) AS rn\n      FROM SHOP.PRICE_HISTORY\
+      \ AS OF SCN ${run_scn} p\n    )\n    WHERE\n      rn = 1\n  ) \"d0\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: price_history
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 10
+    checks_with_sql: 2
+    runtime_only_checks: 8
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_price_history
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_price_history
+- job_id: JOB-shop_product
+  order: 10
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: PRODUCT
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"product\".\"PRODUCT_ID\" AS NUMERIC(10, 0)) AS \"product_id\"\
+      ,\n    CAST(\"product\".\"NAME\" AS VARCHAR(120)) AS \"product_name\",\n   \
+      \ CAST(\"category\".\"TITLE\" AS VARCHAR(80)) AS \"category_title\",\n    CAST(\"\
+      AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF\
+      \ SCN ${run_scn} \"product\"\n  INNER JOIN \"SHOP\".\"CATEGORY\" AS OF SCN ${run_scn}\
+      \ \"category\"\n    ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: product_catalogue
+  primary_keys: []
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 8
+    checks_with_sql: 2
+    runtime_only_checks: 6
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_product
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_product
+- job_id: JOB-shop_stock
+  order: 11
+  status: READY
+  source:
+    connection: oracle_source
+    schema: SHOP
+    table: STOCK
+    snapshot_binding: ${run_scn}
+    query: "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    \"\
+      PRODUCT_ID\" AS \"product_id\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH'\
+      \ THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_north\",\n    CAST(SUM(CASE\
+      \ WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_south\"\
+      ,\n    SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END)\
+      \ AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN\
+      \ ${run_scn} \"t0\"\n  GROUP BY\n    \"PRODUCT_ID\""
+  target:
+    connection: postgresql_target
+    schema: shop
+    table: stock_by_product
+  primary_keys:
+  - product_id
+  validation_strategy:
+    is_complex_transformation: true
+    native_dvt_schema: true
+    native_dvt_row: false
+    dvt_custom_query: true
+  contract_coverage:
+    total_checks: 12
+    checks_with_sql: 6
+    runtime_only_checks: 6
+    sql_checks_summary:
+    - V-ROWCOUNT-JOB-shop_stock
+    - V-QUARANTINE-JOB-shop_stock
+    - V-DELIVERY-JOB-shop_stock
+    - V-FIDELITY-NULL-JOB-shop_stock-product_id
+    - V-FIDELITY-EMPTY-LOB-JOB-shop_stock
+    - V-QUARANTINE-COLUMN-JOB-shop_stock-__q_stock-by-product_unlisted
+- job_id: JOB-shop_order_line
+  status: BLOCKED
+  reason: Explicitly blocked in migration specification (no query emitted by transpiler)

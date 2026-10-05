@@ -1,0 +1,17 @@
+{
+  "data_validation": {
+    "source_conn_name": "oracle_source",
+    "target_conn_name": "postgresql_target",
+    "schema_name": "SHOP",
+    "table_name": "STOCK",
+    "target_schema_name": "shop",
+    "target_table_name": "stock_by_product",
+    "primary_keys": [
+      {
+        "source_column": "product_id",
+        "target_column": "product_id"
+      }
+    ],
+    "validation_type": "Row"
+  }
+}

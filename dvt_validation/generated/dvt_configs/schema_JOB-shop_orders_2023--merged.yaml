@@ -1,0 +1,10 @@
+{
+  "schema_validation": {
+    "source_conn_name": "oracle_source",
+    "target_conn_name": "postgresql_target",
+    "schema_name": "SHOP",
+    "table_name": "ORDERS_2023",
+    "target_schema_name": "shop",
+    "target_table_name": "orders_history"
+  }
+}
