@@ -1,0 +1,1483 @@
+{
+  "source_duckdb": "/home/admin/dvt_validation/input/duckdb.yaml",
+  "source_seatunnel": "/home/admin/dvt_validation/input/seatunnel.conf",
+  "duckdb_summary": {
+    "jobs": 11,
+    "checks": 106,
+    "checks_with_sql": 28,
+    "checks_runtime_only": 78,
+    "blocked_jobs": [
+      "JOB-shop_order_line"
+    ],
+    "blockers": {}
+  },
+  "convention": {
+    "zero_rows_means_pass": true,
+    "nonzero_rows_means_fail": true,
+    "records": "one row per violation",
+    "relations_bound_at_run_time": true,
+    "note": "No check names an Oracle relation directly. The runtime exports the source at the pinned SCN and attaches the loaded target, and every check compares those views, so a check is comparable across jobs and the snapshot is one decision."
+  },
+  "jobs": [
+    {
+      "job_id": "JOB-shop_audit_event",
+      "seatunnel_job_id": "JOB-shop_audit_event",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 1,
+        "source_projection": "SELECT\n  \"EVENT_ID\" AS \"event_id\",\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM \"SHOP\".\"AUDIT_EVENT\" AS \"t0\"",
+        "target_relation": "\"shop\".\"audit_event\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_audit_event",
+            "relation": "\"SHOP\".\"AUDIT_EVENT\"",
+            "schema": "SHOP",
+            "table": "AUDIT_EVENT",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_audit_event",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_audit_event\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_audit_event\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_audit_event",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_audit_event",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_audit_event",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_audit_event",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  *\nFROM (\n  SELECT\n    'amount' AS \"column_name\"\n  FROM __SOURCE__shop_audit_event AS s\n  JOIN __TARGET__shop_audit_event AS t\n    USING (\"event_id\")\n  WHERE\n    s.\"amount\" IS DISTINCT FROM t.\"amount\"\n)\nLIMIT 20",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-JOB-shop_audit_event",
+            "type": "passthrough-fidelity",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  *\nFROM (\n  SELECT\n    'event_id' AS \"column_name\"\n  FROM __RAW__shop_audit_event AS r\n  JOIN __TARGET__shop_audit_event AS t\n    USING (\"event_id\")\n  WHERE\n    r.\"EVENT_ID\" IS DISTINCT FROM t.\"event_id\"\n)\nLIMIT 20",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-NULL-JOB-shop_audit_event-event_id",
+            "type": "not-null-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_audit_event\nWHERE\n  \"event_id\" IS NULL\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_audit_event",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_audit_event\nWHERE\n  \"event_id\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-GOVERNANCE-JOB-shop_audit_event-GOVERNANCE_DECLARED_KEY",
+            "type": "governance-attested",
+            "category": "governance",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "signed-off-against-evidence",
+            "expected": "ATTESTED_BY_A_NAMED_HUMAN"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_audit_event",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.audit_event",
+        "target": "\"\\\"shop\\\".\\\"audit_event\\\"\"",
+        "ddl": "shop_audit_event_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_audit_event_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"audit_event\\\"\"\n      columns = [\n        \"event_id\",\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"audit_event\" (\n    \"event_id\" TEXT COLLATE \"C\" NOT NULL,\n    \"amount\" NUMERIC(12, 2),\n    CONSTRAINT \"pk_shop_audit_event\" PRIMARY KEY (\"event_id\")\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"event_id\" AS \"event_id\", \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_audit_event\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_audit_event\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"audit_event\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_audit_event_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_audit_event_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    \"EVENT_ID\" AS \"event_id\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn} \"t0\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_audit_event\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"audit_event\\\"\"\n      columns = [\n        \"event_id\",\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"audit_event\" (\"event_id\", \"amount\")\n  SELECT\n    \"EVENT_ID\" AS \"event_id\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn} \"t0\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_audit_event\"\n        result_table_name = \"sink_shop_audit_event\"\n        query = \"SELECT * FROM src_shop_audit_event\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_audit_event\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"audit_event\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    \"EVENT_ID\" AS \"event_id\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn} \"t0\"",
+        "dml_statement": "INSERT INTO \"shop\".\"audit_event\" (\"event_id\", \"amount\")\n  SELECT\n    \"EVENT_ID\" AS \"event_id\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"AUDIT_EVENT\" AS OF SCN ${run_scn} \"t0\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_branch",
+      "seatunnel_job_id": "JOB-shop_branch",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 2,
+        "source_projection": "SELECT\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\",\n  TRIM(\"CODE\") AS \"code\"\nFROM \"SHOP\".\"BRANCH\" AS \"t0\"",
+        "target_relation": "\"shop\".\"branch\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_branch",
+            "relation": "\"SHOP\".\"BRANCH\"",
+            "schema": "SHOP",
+            "table": "BRANCH",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_branch",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_branch\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_branch\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_branch",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_branch",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_branch",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_branch",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_branch",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_branch\nWHERE\n  \"code\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_branch",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.branch",
+        "target": "\"\\\"shop\\\".\\\"branch\\\"\"",
+        "ddl": "shop_branch_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_branch_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"branch\\\"\"\n      columns = [\n        \"amount\",\n        \"code\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"branch\" (\n    \"amount\" NUMERIC(12, 2),\n    \"code\" TEXT COLLATE \"C\"\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\", \"code\" AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_branch\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_branch\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"branch\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_branch_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_branch_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    TRIM(\"CODE\") AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn} \"t0\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_branch\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"branch\\\"\"\n      columns = [\n        \"amount\",\n        \"code\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"branch\" (\"amount\", \"code\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    TRIM(\"CODE\") AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn} \"t0\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_branch\"\n        result_table_name = \"sink_shop_branch\"\n        query = \"SELECT * FROM src_shop_branch\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_branch\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"branch\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    TRIM(\"CODE\") AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn} \"t0\"",
+        "dml_statement": "INSERT INTO \"shop\".\"branch\" (\"amount\", \"code\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    TRIM(\"CODE\") AS \"code\"\n  FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn} \"t0\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_customer",
+      "seatunnel_job_id": "JOB-shop_client",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 3,
+        "source_projection": "SELECT\n  \"FIRST_NAME\" AS \"first_name\",\n  \"LAST_NAME\" AS \"last_name\",\n  \"MOBILE\" AS \"mobile\",\n  \"LANDLINE\" AS \"landline\",\n  \"VIP\" AS \"vip\",\n  \"FULL_ADDRESS\" AS \"full_address\",\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\",\n  CAST(SUBSTRING(TRIM(\"COUNTRY\"), 1, 2) AS TEXT(2)) AS \"country_code\",\n  SHA256(CAST(\"EMAIL\" AS TEXT)) AS \"email\",\n  \"STATUS\" AS \"status_code\",\n  CAST(\"CREATED\" AS DATE) AS \"created_on\",\n  CAST((\n    TRIM(NULLIF(\"FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n  ) AS TEXT(160)) AS \"full_name\",\n  COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\",\n  CAST(CASE\n    WHEN \"STATUS\" = 'A'\n    THEN 'active'\n    WHEN \"STATUS\" = 'C'\n    THEN 'closed'\n    ELSE 'unknown'\n  END AS TEXT(20)) AS \"status_label\",\n  CAST(CURRENT_TIMESTAMP AS TIMESTAMPTZ) AS \"loaded_at\",\n  CAST(LIST_EXTRACT(REGEXP_EXTRACT_ALL(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)'), 1) AS TEXT(120)) AS \"street\",\n  CAST(LIST_EXTRACT(REGEXP_EXTRACT_ALL(\"FULL_ADDRESS\", '(?:,\\ ){1}(.*?)(?:,\\ |$)'), 1) AS TEXT(80)) AS \"city\",\n  CASE\n    WHEN (\n      TRUNC((\n        LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"FULL_ADDRESS\", ', ', ''))\n      ) / 2) + 1\n    ) > 2\n    THEN 1\n    ELSE NULL\n  END AS \"__q_customer-table_extra_parts\"\nFROM \"SHOP\".\"CUSTOMER\" AS \"t0\"\nWHERE\n  (\n    \"STATUS\" <> 'X' AND (\n      \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n    )\n  )",
+        "target_relation": "\"shop\".\"client\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_customer",
+            "relation": "\"SHOP\".\"CUSTOMER\"",
+            "schema": "SHOP",
+            "table": "CUSTOMER",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_customer",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_client\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_client\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_customer",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_customer",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_customer",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-STRICT-1-BEHAVIOUR-JOB-shop_customer",
+            "type": "behaviour-equivalence",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "principal-parity",
+            "expected": "SOURCE_RESULT_EQUALS_TARGET_RESULT"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_customer",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-JOB-shop_customer",
+            "type": "passthrough-fidelity",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_UNTRANSFORMED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-NULL-JOB-shop_customer-created_on",
+            "type": "not-null-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_client\nWHERE\n  \"created_on\" IS NULL\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_customer",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_client\nWHERE\n  \"first_name\" = ''\n  OR \"last_name\" = ''\n  OR \"mobile\" = ''\n  OR \"landline\" = ''\n  OR \"vip\" = ''\n  OR \"full_address\" = ''\n  OR \"country_code\" = ''\n  OR \"email\" = ''\n  OR \"status_code\" = ''\n  OR \"full_name\" = ''\n  OR \"contact_phone\" = ''\n  OR \"status_label\" = ''\n  OR \"street\" = ''\n  OR \"city\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-COLUMNSPLIT-customer-table",
+            "type": "split-extra-parts",
+            "category": "quality",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_client\nWHERE\n  NOT \"__q_customer-table_extra_parts\" IS NULL\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-UPSERT-KEY-customer-table",
+            "type": "upsert-target-has-unique-key",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "ddl-inspection",
+            "expected": "UPSERT_TARGET_HAS_UNIQUE_KEY"
+          },
+          {
+            "check_id": "V-SENSITIVE-JOB-shop_customer-MASK-EMAIL",
+            "type": "sensitive-mask",
+            "category": "sensitive",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "SOURCE_AND_TARGET_DISAGREE"
+          },
+          {
+            "check_id": "V-SENSITIVE-JOB-shop_customer-DROP-PHONE_OLD",
+            "type": "sensitive-dropped",
+            "category": "sensitive",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "target-column-list",
+            "expected": "COLUMN_ABSENT_FROM_TARGET"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows",
+          "column-split on FULL_ADDRESS is deterministic for the first 2 parts; parts beyond the declared targets have nowhere to go, which is why onExtraParts exists",
+          "column-split onExtraParts=quarantine: a row with more than 2 delimited parts raises __q_customer-table_extra_parts; the extra parts have no target column so they would otherwise disappear silently",
+          "concat is rendered as Oracle `||`, which treats a NULL operand as an empty string rather than propagating NULL",
+          "mask strategy=hash is rendered as Oracle STANDARD_HASH(expr, 'SHA256'); the digest is not reversible, which is the point of masking but is irreversible"
+        ],
+        "env": {
+          "job_name": "JOB-shop_customer",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "",
+        "target": "\"\\\"shop\\\".\\\"client\\\"\"",
+        "ddl": "shop_client_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_client_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"client\\\"\"\n      columns = [\n        \"first_name\",\n        \"last_name\",\n        \"mobile\",\n        \"landline\",\n        \"vip\",\n        \"full_address\",\n        \"amount\",\n        \"country_code\",\n        \"email\",\n        \"status_code\",\n        \"created_on\",\n        \"full_name\",\n        \"contact_phone\",\n        \"status_label\",\n        \"loaded_at\",\n        \"street\",\n        \"city\",\n        \"__q_customer-table_extra_parts\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"client\" (\n    \"first_name\" TEXT COLLATE \"C\",\n    \"last_name\" TEXT COLLATE \"C\",\n    \"mobile\" TEXT COLLATE \"C\",\n    \"landline\" TEXT COLLATE \"C\",\n    \"vip\" TEXT COLLATE \"C\",\n    \"full_address\" TEXT COLLATE \"C\",\n    \"amount\" NUMERIC(12, 2),\n    \"country_code\" CHAR(2),\n    \"email\" TEXT COLLATE \"C\",\n    \"status_code\" TEXT COLLATE \"C\",\n    \"created_on\" DATE NOT NULL,\n    \"full_name\" VARCHAR(160),\n    \"contact_phone\" TEXT COLLATE \"C\",\n    \"status_label\" VARCHAR(20),\n    \"loaded_at\" TIMESTAMPTZ,\n    \"street\" VARCHAR(120),\n    \"city\" VARCHAR(80),\n    \"__q_customer-table_extra_parts\" INT\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"first_name\" AS \"first_name\", \"last_name\" AS \"last_name\", \"mobile\" AS \"mobile\", \"landline\" AS \"landline\", \"vip\" AS \"vip\", \"full_address\" AS \"full_address\", \"amount\" AS \"amount\", \"country_code\" AS \"country_code\", \"email\" AS \"email\", \"status_code\" AS \"status_code\", \"created_on\" AS \"created_on\", \"full_name\" AS \"full_name\", \"contact_phone\" AS \"contact_phone\", \"status_label\" AS \"status_label\", \"loaded_at\" AS \"loaded_at\", \"street\" AS \"street\", \"city\" AS \"city\", \"__q_customer-table_extra_parts\" AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\".\"CUSTOMER\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_client\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_client\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"client\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_client_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_client_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    \"FIRST_NAME\" AS \"first_name\",\n    \"LAST_NAME\" AS \"last_name\",\n    \"MOBILE\" AS \"mobile\",\n    \"LANDLINE\" AS \"landline\",\n    \"VIP\" AS \"vip\",\n    \"FULL_ADDRESS\" AS \"full_address\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    CAST(SUBSTR(TRIM(\"COUNTRY\"), 1, 2) AS CHAR(2)) AS \"country_code\",\n    STANDARD_HASH(CAST(\"EMAIL\" AS STRING), 'SHA256') AS \"email\",\n    \"STATUS\" AS \"status_code\",\n    CAST(\"CREATED\" AS DATE) AS \"created_on\",\n    CAST((\n      TRIM(NULLIF(\"FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n    ) AS VARCHAR(160)) AS \"full_name\",\n    COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\",\n    CAST(CASE\n      WHEN \"STATUS\" = 'A'\n      THEN 'active'\n      WHEN \"STATUS\" = 'C'\n      THEN 'closed'\n      ELSE 'unknown'\n    END AS VARCHAR(20)) AS \"status_label\",\n    CAST(CURRENT_TIMESTAMP AS TIMESTAMP WITH TIME ZONE) AS \"loaded_at\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(120)) AS \"street\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(?:,\\ ){1}(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(80)) AS \"city\",\n    CASE\n      WHEN (\n        TRUNC((\n          LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"FULL_ADDRESS\", ', ', ''))\n        ) / 2) + 1\n      ) > 2\n      THEN 1\n      ELSE NULL\n    END AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\".\"CUSTOMER\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    (\n      \"STATUS\" <> 'X' AND (\n        \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n      )\n    )\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_client\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"client\\\"\"\n      columns = [\n        \"first_name\",\n        \"last_name\",\n        \"mobile\",\n        \"landline\",\n        \"vip\",\n        \"full_address\",\n        \"amount\",\n        \"country_code\",\n        \"email\",\n        \"status_code\",\n        \"created_on\",\n        \"full_name\",\n        \"contact_phone\",\n        \"status_label\",\n        \"loaded_at\",\n        \"street\",\n        \"city\",\n        \"__q_customer-table_extra_parts\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"client\" (\"first_name\", \"last_name\", \"mobile\", \"landline\", \"vip\", \"full_address\", \"amount\", \"country_code\", \"email\", \"status_code\", \"created_on\", \"full_name\", \"contact_phone\", \"status_label\", \"loaded_at\", \"street\", \"city\", \"__q_customer-table_extra_parts\")\n  SELECT\n    \"FIRST_NAME\" AS \"first_name\",\n    \"LAST_NAME\" AS \"last_name\",\n    \"MOBILE\" AS \"mobile\",\n    \"LANDLINE\" AS \"landline\",\n    \"VIP\" AS \"vip\",\n    \"FULL_ADDRESS\" AS \"full_address\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    CAST(SUBSTR(TRIM(\"COUNTRY\"), 1, 2) AS CHAR(2)) AS \"country_code\",\n    STANDARD_HASH(CAST(\"EMAIL\" AS STRING), 'SHA256') AS \"email\",\n    \"STATUS\" AS \"status_code\",\n    CAST(\"CREATED\" AS DATE) AS \"created_on\",\n    CAST((\n      TRIM(NULLIF(\"FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n    ) AS VARCHAR(160)) AS \"full_name\",\n    COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\",\n    CAST(CASE\n      WHEN \"STATUS\" = 'A'\n      THEN 'active'\n      WHEN \"STATUS\" = 'C'\n      THEN 'closed'\n      ELSE 'unknown'\n    END AS VARCHAR(20)) AS \"status_label\",\n    CAST(CURRENT_TIMESTAMP AS TIMESTAMP WITH TIME ZONE) AS \"loaded_at\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(120)) AS \"street\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(?:,\\ ){1}(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(80)) AS \"city\",\n    CASE\n      WHEN (\n        TRUNC((\n          LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"FULL_ADDRESS\", ', ', ''))\n        ) / 2) + 1\n      ) > 2\n      THEN 1\n      ELSE NULL\n    END AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\".\"CUSTOMER\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    (\n      \"STATUS\" <> 'X' AND (\n        \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n      )\n    )\n  \"\"\"\n      write_mode = \"upsert\"\n      conflict_target = []\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_client\"\n        result_table_name = \"sink_shop_client\"\n        query = \"SELECT * FROM src_shop_client\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_client\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"client\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n        support_upsert = true\n      }\n    }\n  }",
+        "source_query": "SELECT\n    \"FIRST_NAME\" AS \"first_name\",\n    \"LAST_NAME\" AS \"last_name\",\n    \"MOBILE\" AS \"mobile\",\n    \"LANDLINE\" AS \"landline\",\n    \"VIP\" AS \"vip\",\n    \"FULL_ADDRESS\" AS \"full_address\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    CAST(SUBSTR(TRIM(\"COUNTRY\"), 1, 2) AS CHAR(2)) AS \"country_code\",\n    STANDARD_HASH(CAST(\"EMAIL\" AS STRING), 'SHA256') AS \"email\",\n    \"STATUS\" AS \"status_code\",\n    CAST(\"CREATED\" AS DATE) AS \"created_on\",\n    CAST((\n      TRIM(NULLIF(\"FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n    ) AS VARCHAR(160)) AS \"full_name\",\n    COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\",\n    CAST(CASE\n      WHEN \"STATUS\" = 'A'\n      THEN 'active'\n      WHEN \"STATUS\" = 'C'\n      THEN 'closed'\n      ELSE 'unknown'\n    END AS VARCHAR(20)) AS \"status_label\",\n    CAST(CURRENT_TIMESTAMP AS TIMESTAMP WITH TIME ZONE) AS \"loaded_at\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(120)) AS \"street\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(?:,\\ ){1}(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(80)) AS \"city\",\n    CASE\n      WHEN (\n        TRUNC((\n          LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"FULL_ADDRESS\", ', ', ''))\n        ) / 2) + 1\n      ) > 2\n      THEN 1\n      ELSE NULL\n    END AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\".\"CUSTOMER\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    (\n      \"STATUS\" <> 'X' AND (\n        \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n      )\n    )",
+        "dml_statement": "INSERT INTO \"shop\".\"client\" (\"first_name\", \"last_name\", \"mobile\", \"landline\", \"vip\", \"full_address\", \"amount\", \"country_code\", \"email\", \"status_code\", \"created_on\", \"full_name\", \"contact_phone\", \"status_label\", \"loaded_at\", \"street\", \"city\", \"__q_customer-table_extra_parts\")\n  SELECT\n    \"FIRST_NAME\" AS \"first_name\",\n    \"LAST_NAME\" AS \"last_name\",\n    \"MOBILE\" AS \"mobile\",\n    \"LANDLINE\" AS \"landline\",\n    \"VIP\" AS \"vip\",\n    \"FULL_ADDRESS\" AS \"full_address\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    CAST(SUBSTR(TRIM(\"COUNTRY\"), 1, 2) AS CHAR(2)) AS \"country_code\",\n    STANDARD_HASH(CAST(\"EMAIL\" AS STRING), 'SHA256') AS \"email\",\n    \"STATUS\" AS \"status_code\",\n    CAST(\"CREATED\" AS DATE) AS \"created_on\",\n    CAST((\n      TRIM(NULLIF(\"FIRST_NAME\", '')) || ' ' || TRIM(NULLIF(\"LAST_NAME\", ''))\n    ) AS VARCHAR(160)) AS \"full_name\",\n    COALESCE(\"MOBILE\", \"LANDLINE\") AS \"contact_phone\",\n    CAST(CASE\n      WHEN \"STATUS\" = 'A'\n      THEN 'active'\n      WHEN \"STATUS\" = 'C'\n      THEN 'closed'\n      ELSE 'unknown'\n    END AS VARCHAR(20)) AS \"status_label\",\n    CAST(CURRENT_TIMESTAMP AS TIMESTAMP WITH TIME ZONE) AS \"loaded_at\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(120)) AS \"street\",\n    CAST(REGEXP_SUBSTR(\"FULL_ADDRESS\", '(?:,\\ ){1}(.*?)(?:,\\ |$)', 1, 1) AS VARCHAR(80)) AS \"city\",\n    CASE\n      WHEN (\n        TRUNC((\n          LENGTH(\"FULL_ADDRESS\") - LENGTH(REPLACE(\"FULL_ADDRESS\", ', ', ''))\n        ) / 2) + 1\n      ) > 2\n      THEN 1\n      ELSE NULL\n    END AS \"__q_customer-table_extra_parts\"\n  FROM \"SHOP\".\"CUSTOMER\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    (\n      \"STATUS\" <> 'X' AND (\n        \"CREATED\" >= '2020-01-01 00:00:00' OR \"VIP\" = 'Y'\n      )\n    )",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_order_summary",
+      "seatunnel_job_id": "JOB-shop_order_summary",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 4,
+        "source_projection": "SELECT\n  CAST(\"s0\".\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM (\n  SELECT\n    ORDER_DATE,\n    SUM(AMOUNT) AS TOTAL\n  FROM SHOP.ORDERS\n  GROUP BY\n    ORDER_DATE\n) AS \"s0\"",
+        "target_relation": "\"shop\".\"order_summary\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_order_summary",
+            "relation": "\"SHOP\".\"ORDER_SUMMARY\"",
+            "schema": "SHOP",
+            "table": "ORDER_SUMMARY",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_order_summary",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_order_summary\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_order_summary\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_order_summary",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_order_summary",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_order_summary",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_order_summary",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_order_summary",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.order_summary",
+        "target": "\"\\\"shop\\\".\\\"order_summary\\\"\"",
+        "ddl": "shop_order_summary_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_order_summary_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"order_summary\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"order_summary\" (\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"ORDER_SUMMARY\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_order_summary\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_order_summary\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"order_summary\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_order_summary_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_order_summary_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"s0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      ORDER_DATE,\n      SUM(AMOUNT) AS TOTAL\n    FROM SHOP.ORDERS AS OF SCN ${run_scn}\n    GROUP BY\n      ORDER_DATE\n  ) \"s0\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_order_summary\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"order_summary\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"order_summary\" (\"amount\")\n  SELECT\n    CAST(\"s0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      ORDER_DATE,\n      SUM(AMOUNT) AS TOTAL\n    FROM SHOP.ORDERS AS OF SCN ${run_scn}\n    GROUP BY\n      ORDER_DATE\n  ) \"s0\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_order_summary\"\n        result_table_name = \"sink_shop_order_summary\"\n        query = \"SELECT * FROM src_shop_order_summary\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_order_summary\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"order_summary\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"s0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      ORDER_DATE,\n      SUM(AMOUNT) AS TOTAL\n    FROM SHOP.ORDERS AS OF SCN ${run_scn}\n    GROUP BY\n      ORDER_DATE\n  ) \"s0\"",
+        "dml_statement": "INSERT INTO \"shop\".\"order_summary\" (\"amount\")\n  SELECT\n    CAST(\"s0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      ORDER_DATE,\n      SUM(AMOUNT) AS TOTAL\n    FROM SHOP.ORDERS AS OF SCN ${run_scn}\n    GROUP BY\n      ORDER_DATE\n  ) \"s0\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_orders",
+      "seatunnel_job_id": "JOB-shop_orders",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 5,
+        "source_projection": "SELECT\n  *\nFROM (\n  SELECT\n    \"NARRATIVE\" AS \"narrative\",\n    \"ORDER_DATE\" AS \"order_date\",\n    \"SHOP.BRANCH\" AS \"shop.branch\",\n    \"BRANCH_CODE\" AS \"branch_code\",\n    COALESCE(\"CURRENCY\", 'EUR') AS \"currency\",\n    (\n      \"SHIP_DATE\" + INTERVAL '1' DAY\n    ) AS \"ship_date\",\n    CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL' END AS \"priority\",\n    CAST(\"AMOUNT\" AS DECIMAL(14, 4)) AS \"amount\",\n    CAST('shop-eu' AS TEXT(10)) AS \"tenant_id\",\n    CAST(CASE\n      WHEN \"lk1\".\"__lk1_n\" > 1\n      THEN 'UNKNOWN'\n      ELSE COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n    END AS TEXT(80)) AS \"branch_name\"\n  FROM \"SHOP\".\"ORDERS\" AS \"t0\"\n  LEFT JOIN (\n    SELECT\n      \"CODE\" AS \"__lk1_k0\",\n      MAX(\"NAME\") AS \"__lk1_v0\",\n      COUNT(*) AS \"__lk1_n\"\n    FROM \"SHOP\".\"BRANCH\"\n    GROUP BY\n      \"CODE\"\n  ) AS \"lk1\"\n    ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n) AS \"__transformed\"\nWHERE\n  (\n    \"__transformed\".\"ship_date\" >= \"__transformed\".\"order_date\"\n    OR \"__transformed\".\"ship_date\" IS NULL\n  )",
+        "target_relation": "\"shop\".\"orders\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_orders",
+            "relation": "\"SHOP\".\"ORDERS\"",
+            "schema": "SHOP",
+            "table": "ORDERS",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_orders",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_orders\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_orders\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_orders",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_orders",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_orders",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-STRICT-0-AGGREGATE-JOB-shop_orders",
+            "type": "aggregate-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  ABS(\n    (\n      SELECT\n        SUM(CAST(\"__aggregate_column__\" AS DOUBLE))\n      FROM __TARGET__shop_orders\n    ) - (\n      SELECT\n        SUM(CAST(\"__aggregate_column__\" AS DOUBLE))\n      FROM __SOURCE__shop_orders\n    )\n  ) > 0.01",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_orders",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-JOB-shop_orders",
+            "type": "passthrough-fidelity",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_UNTRANSFORMED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_orders",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_orders\nWHERE\n  \"narrative\" = ''\n  OR \"order_date\" = ''\n  OR \"shop.branch\" = ''\n  OR \"branch_code\" = ''\n  OR \"currency\" = ''\n  OR \"ship_date\" = ''\n  OR \"priority\" = ''\n  OR \"tenant_id\" = ''\n  OR \"branch_name\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-LOOKUP-MISS-orders-table",
+            "type": "lookup-miss",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "on-miss-sentinel",
+            "expected": "ZERO_MISSES"
+          }
+        ],
+        "assumptions": [
+          "lookup 1 declares maxLookupRows=1000; the join cannot enforce a row cap, so the limit is a capacity assertion checked by the validation contract"
+        ],
+        "env": {
+          "job_name": "JOB-shop_orders",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.orders",
+        "target": "\"\\\"shop\\\".\\\"orders\\\"\"",
+        "ddl": "shop_orders_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_orders_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"orders\\\"\"\n      columns = [\n        \"narrative\",\n        \"order_date\",\n        \"shop.branch\",\n        \"branch_code\",\n        \"currency\",\n        \"ship_date\",\n        \"priority\",\n        \"amount\",\n        \"tenant_id\",\n        \"branch_name\",\n      ]\n      command_count = 3\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"orders\" (\n    \"narrative\" TEXT COLLATE \"C\",\n    \"order_date\" TEXT COLLATE \"C\",\n    \"shop.branch\" TEXT COLLATE \"C\",\n    \"branch_code\" TEXT COLLATE \"C\",\n    \"currency\" TEXT COLLATE \"C\",\n    \"ship_date\" TEXT COLLATE \"C\",\n    \"priority\" TEXT COLLATE \"C\",\n    \"amount\" NUMERIC(14, 4),\n    \"tenant_id\" VARCHAR(10),\n    \"branch_name\" VARCHAR(80)\n  )\n  PARTITION BY RANGE(\"order_date\")\n  \"\"\"\n      partition-default.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"orders_p_default\"\n  PARTITION OF \"shop\".\"orders\" DEFAULT\n  \"\"\"\n      tablespace.sql = \"\"\"\n  ALTER TABLE \"shop\".\"orders\"\n  SET TABLESPACE \"orders_data\"\n  \"\"\"\n      partition {\n        strategy = \"range\"\n        columns = [\n          \"order_date\",\n        ]\n        sourceStrategy = \"INTERVAL\"\n      }\n      tablespace = \"orders_data\"\n      deferrable = true\n      initially_deferred = true\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"narrative\" AS \"narrative\", \"order_date\" AS \"order_date\", \"shop.branch\" AS \"shop.branch\", \"branch_code\" AS \"branch_code\", \"currency\" AS \"currency\", \"ship_date\" AS \"ship_date\", \"priority\" AS \"priority\", \"amount\" AS \"amount\", \"tenant_id\" AS \"tenant_id\", \"branch_name\" AS \"branch_name\"\n  FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_orders\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_orders\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"orders\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_orders_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_orders_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    *\n  FROM (\n    SELECT\n      \"NARRATIVE\" AS \"narrative\",\n      \"ORDER_DATE\" AS \"order_date\",\n      \"SHOP.BRANCH\" AS \"shop.branch\",\n      \"BRANCH_CODE\" AS \"branch_code\",\n      COALESCE(\"CURRENCY\", 'EUR') AS \"currency\",\n      (\n        \"SHIP_DATE\" + INTERVAL '1' DAY\n      ) AS \"ship_date\",\n      CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL' END AS \"priority\",\n      CAST(\"AMOUNT\" AS NUMERIC(14, 4)) AS \"amount\",\n      CAST('shop-eu' AS VARCHAR(10)) AS \"tenant_id\",\n      CAST(CASE\n        WHEN \"lk1\".\"__lk1_n\" > 1\n        THEN 'UNKNOWN'\n        ELSE COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n      END AS VARCHAR(80)) AS \"branch_name\"\n    FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn} \"t0\"\n    LEFT JOIN (\n      SELECT\n        \"CODE\" AS \"__lk1_k0\",\n        MAX(\"NAME\") AS \"__lk1_v0\",\n        COUNT(*) AS \"__lk1_n\"\n      FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn}\n      GROUP BY\n        \"CODE\"\n    ) \"lk1\"\n      ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n  ) \"__transformed\"\n  WHERE\n    (\n      \"__transformed\".\"ship_date\" >= \"__transformed\".\"order_date\"\n      OR \"__transformed\".\"ship_date\" IS NULL\n    )\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_orders\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"orders\\\"\"\n      columns = [\n        \"narrative\",\n        \"order_date\",\n        \"shop.branch\",\n        \"branch_code\",\n        \"currency\",\n        \"ship_date\",\n        \"priority\",\n        \"amount\",\n        \"tenant_id\",\n        \"branch_name\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"orders\" (\"narrative\", \"order_date\", \"shop.branch\", \"branch_code\", \"currency\", \"ship_date\", \"priority\", \"amount\", \"tenant_id\", \"branch_name\")\n  SELECT\n    *\n  FROM (\n    SELECT\n      \"NARRATIVE\" AS \"narrative\",\n      \"ORDER_DATE\" AS \"order_date\",\n      \"SHOP.BRANCH\" AS \"shop.branch\",\n      \"BRANCH_CODE\" AS \"branch_code\",\n      COALESCE(\"CURRENCY\", 'EUR') AS \"currency\",\n      (\n        \"SHIP_DATE\" + INTERVAL '1' DAY\n      ) AS \"ship_date\",\n      CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL' END AS \"priority\",\n      CAST(\"AMOUNT\" AS NUMERIC(14, 4)) AS \"amount\",\n      CAST('shop-eu' AS VARCHAR(10)) AS \"tenant_id\",\n      CAST(CASE\n        WHEN \"lk1\".\"__lk1_n\" > 1\n        THEN 'UNKNOWN'\n        ELSE COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n      END AS VARCHAR(80)) AS \"branch_name\"\n    FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn} \"t0\"\n    LEFT JOIN (\n      SELECT\n        \"CODE\" AS \"__lk1_k0\",\n        MAX(\"NAME\") AS \"__lk1_v0\",\n        COUNT(*) AS \"__lk1_n\"\n      FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn}\n      GROUP BY\n        \"CODE\"\n    ) \"lk1\"\n      ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n  ) \"__transformed\"\n  WHERE\n    (\n      \"__transformed\".\"ship_date\" >= \"__transformed\".\"order_date\"\n      OR \"__transformed\".\"ship_date\" IS NULL\n    )\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_orders\"\n        result_table_name = \"sink_shop_orders\"\n        query = \"SELECT * FROM src_shop_orders\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_orders\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"orders\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    *\n  FROM (\n    SELECT\n      \"NARRATIVE\" AS \"narrative\",\n      \"ORDER_DATE\" AS \"order_date\",\n      \"SHOP.BRANCH\" AS \"shop.branch\",\n      \"BRANCH_CODE\" AS \"branch_code\",\n      COALESCE(\"CURRENCY\", 'EUR') AS \"currency\",\n      (\n        \"SHIP_DATE\" + INTERVAL '1' DAY\n      ) AS \"ship_date\",\n      CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL' END AS \"priority\",\n      CAST(\"AMOUNT\" AS NUMERIC(14, 4)) AS \"amount\",\n      CAST('shop-eu' AS VARCHAR(10)) AS \"tenant_id\",\n      CAST(CASE\n        WHEN \"lk1\".\"__lk1_n\" > 1\n        THEN 'UNKNOWN'\n        ELSE COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n      END AS VARCHAR(80)) AS \"branch_name\"\n    FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn} \"t0\"\n    LEFT JOIN (\n      SELECT\n        \"CODE\" AS \"__lk1_k0\",\n        MAX(\"NAME\") AS \"__lk1_v0\",\n        COUNT(*) AS \"__lk1_n\"\n      FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn}\n      GROUP BY\n        \"CODE\"\n    ) \"lk1\"\n      ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n  ) \"__transformed\"\n  WHERE\n    (\n      \"__transformed\".\"ship_date\" >= \"__transformed\".\"order_date\"\n      OR \"__transformed\".\"ship_date\" IS NULL\n    )",
+        "dml_statement": "INSERT INTO \"shop\".\"orders\" (\"narrative\", \"order_date\", \"shop.branch\", \"branch_code\", \"currency\", \"ship_date\", \"priority\", \"amount\", \"tenant_id\", \"branch_name\")\n  SELECT\n    *\n  FROM (\n    SELECT\n      \"NARRATIVE\" AS \"narrative\",\n      \"ORDER_DATE\" AS \"order_date\",\n      \"SHOP.BRANCH\" AS \"shop.branch\",\n      \"BRANCH_CODE\" AS \"branch_code\",\n      COALESCE(\"CURRENCY\", 'EUR') AS \"currency\",\n      (\n        \"SHIP_DATE\" + INTERVAL '1' DAY\n      ) AS \"ship_date\",\n      CASE WHEN AMOUNT > 1000 THEN 'HIGH' ELSE 'NORMAL' END AS \"priority\",\n      CAST(\"AMOUNT\" AS NUMERIC(14, 4)) AS \"amount\",\n      CAST('shop-eu' AS VARCHAR(10)) AS \"tenant_id\",\n      CAST(CASE\n        WHEN \"lk1\".\"__lk1_n\" > 1\n        THEN 'UNKNOWN'\n        ELSE COALESCE(\"lk1\".\"__lk1_v0\", 'UNKNOWN')\n      END AS VARCHAR(80)) AS \"branch_name\"\n    FROM \"SHOP\".\"ORDERS\" AS OF SCN ${run_scn} \"t0\"\n    LEFT JOIN (\n      SELECT\n        \"CODE\" AS \"__lk1_k0\",\n        MAX(\"NAME\") AS \"__lk1_v0\",\n        COUNT(*) AS \"__lk1_n\"\n      FROM \"SHOP\".\"BRANCH\" AS OF SCN ${run_scn}\n      GROUP BY\n        \"CODE\"\n    ) \"lk1\"\n      ON \"BRANCH_CODE\" = \"lk1\".\"__lk1_k0\"\n  ) \"__transformed\"\n  WHERE\n    (\n      \"__transformed\".\"ship_date\" >= \"__transformed\".\"order_date\"\n      OR \"__transformed\".\"ship_date\" IS NULL\n    )",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_orders_2023--merged",
+      "seatunnel_job_id": "JOB-shop_orders_history",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 6,
+        "source_projection": "SELECT\n  CAST(\"u0\".\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM (\n  SELECT\n    \"AMOUNT\",\n    \"ORDER_YEAR\"\n  FROM \"SHOP\".\"ORDERS_2023\"\n  UNION ALL\n  SELECT\n    \"AMOUNT\",\n    \"ORDER_YEAR\"\n  FROM \"SHOP\".\"ORDERS_2024\"\n) AS \"u0\"",
+        "target_relation": "\"shop\".\"orders_history\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_orders_2023",
+            "relation": "\"SHOP\".\"ORDERS_2023\"",
+            "schema": "SHOP",
+            "table": "ORDERS_2023",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_orders_2023--merged",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_orders_history\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_orders_history\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_orders_2023--merged",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_orders_2023--merged",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_orders_2023--merged",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_orders_2023--merged",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-MERGE-DISCRIMINATOR-orders-history",
+            "type": "merge-discriminator-distribution",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "group-by-discriminator",
+            "expected": "EVERY_SOURCE_PRESENT_ON_TARGET"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows",
+          "merge is UNION ALL of one branch per source, so duplicate keys across years are kept; the correspondence key is validated rather than enforced"
+        ],
+        "env": {
+          "job_name": "JOB-shop_orders_2023--merged",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "",
+        "target": "\"\\\"shop\\\".\\\"orders_history\\\"\"",
+        "ddl": "shop_orders_history_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_orders_history_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"orders_history\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"orders_history\" (\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_orders_history\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_orders_history\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"orders_history\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_orders_history_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_orders_history_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"u0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n    UNION ALL\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2024\" AS OF SCN ${run_scn}\n  ) \"u0\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_orders_history\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"orders_history\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"orders_history\" (\"amount\")\n  SELECT\n    CAST(\"u0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n    UNION ALL\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2024\" AS OF SCN ${run_scn}\n  ) \"u0\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_orders_history\"\n        result_table_name = \"sink_shop_orders_history\"\n        query = \"SELECT * FROM src_shop_orders_history\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_orders_history\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"orders_history\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"u0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n    UNION ALL\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2024\" AS OF SCN ${run_scn}\n  ) \"u0\"",
+        "dml_statement": "INSERT INTO \"shop\".\"orders_history\" (\"amount\")\n  SELECT\n    CAST(\"u0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2023\" AS OF SCN ${run_scn}\n    UNION ALL\n    SELECT\n      \"AMOUNT\",\n      \"ORDER_YEAR\"\n    FROM \"SHOP\".\"ORDERS_2024\" AS OF SCN ${run_scn}\n  ) \"u0\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_party--company",
+      "seatunnel_job_id": "JOB-shop_party_company",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 7,
+        "source_projection": "SELECT\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM \"SHOP\".\"PARTY\" AS \"t0\"\nWHERE\n  \"PARTY_TYPE\" = 'COMPANY'",
+        "target_relation": "\"shop\".\"party_company\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_party",
+            "relation": "\"SHOP\".\"PARTY\"",
+            "schema": "SHOP",
+            "table": "PARTY",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_party--company",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_party_company\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_party_company\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_party--company",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_party--company",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_party--company",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_party--company",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-SPLIT-COVER-JOB-shop_party--company",
+            "type": "split-branch-non-empty",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "branch-counts",
+            "expected": "EVERY_BRANCH_HAS_ROWS"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_party--company",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.party_company",
+        "target": "\"\\\"shop\\\".\\\"party_company\\\"\"",
+        "ddl": "shop_party_company_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_party_company_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"party_company\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"party_company\" (\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_party_company\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_party_company\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"party_company\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_party_company_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_party_company_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'COMPANY'\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_party_company\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"party_company\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"party_company\" (\"amount\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'COMPANY'\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_party_company\"\n        result_table_name = \"sink_shop_party_company\"\n        query = \"SELECT * FROM src_shop_party_company\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_party_company\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"party_company\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'COMPANY'",
+        "dml_statement": "INSERT INTO \"shop\".\"party_company\" (\"amount\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'COMPANY'",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_party--person",
+      "seatunnel_job_id": "JOB-shop_party_person",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 8,
+        "source_projection": "SELECT\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM \"SHOP\".\"PARTY\" AS \"t0\"\nWHERE\n  \"PARTY_TYPE\" = 'PERSON'",
+        "target_relation": "\"shop\".\"party_person\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_party",
+            "relation": "\"SHOP\".\"PARTY\"",
+            "schema": "SHOP",
+            "table": "PARTY",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_party--person",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_party_person\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_party_person\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_party--person",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_party--person",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_party--person",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_party--person",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-SPLIT-COVER-JOB-shop_party--person",
+            "type": "split-branch-non-empty",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "branch-counts",
+            "expected": "EVERY_BRANCH_HAS_ROWS"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_party--person",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.party_person",
+        "target": "\"\\\"shop\\\".\\\"party_person\\\"\"",
+        "ddl": "shop_party_person_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_party_person_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"party_person\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"party_person\" (\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_party_person\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_party_person\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"party_person\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_party_person_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_party_person_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'PERSON'\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_party_person\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"party_person\\\"\"\n      columns = [\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"party_person\" (\"amount\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'PERSON'\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_party_person\"\n        result_table_name = \"sink_shop_party_person\"\n        query = \"SELECT * FROM src_shop_party_person\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_party_person\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"party_person\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'PERSON'",
+        "dml_statement": "INSERT INTO \"shop\".\"party_person\" (\"amount\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PARTY\" AS OF SCN ${run_scn} \"t0\"\n  WHERE\n    \"PARTY_TYPE\" = 'PERSON'",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_price_history",
+      "seatunnel_job_id": "JOB-shop_price_history",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 9,
+        "source_projection": "SELECT\n  \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n  CAST(\"d0\".\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM (\n  SELECT\n    *\n  FROM (\n    SELECT\n      p.*,\n      ROW_NUMBER() OVER (PARTITION BY PRODUCT_ID ORDER BY CHANGED_AT DESC NULLS FIRST) AS rn\n    FROM SHOP.PRICE_HISTORY AS p\n  )\n  WHERE\n    rn = 1\n) AS \"d0\"",
+        "target_relation": "\"shop\".\"price_history\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_price_history",
+            "relation": "\"SHOP\".\"PRICE_HISTORY\"",
+            "schema": "SHOP",
+            "table": "PRICE_HISTORY",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_price_history",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_price_history\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_price_history\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_price_history",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_price_history",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_price_history",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_price_history",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-JOB-shop_price_history",
+            "type": "passthrough-fidelity",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_UNTRANSFORMED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_price_history",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_price_history\nWHERE\n  \"changed_at\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DEDUPE-latest-price",
+            "type": "duplicate-row-count",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "declared-order-sensitive-key",
+            "expected": "ONE_ROW_PER_DEDUPE_KEY"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows"
+        ],
+        "env": {
+          "job_name": "JOB-shop_price_history",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "create shop.price_history",
+        "target": "\"\\\"shop\\\".\\\"price_history\\\"\"",
+        "ddl": "shop_price_history_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_price_history_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"price_history\\\"\"\n      columns = [\n        \"changed_at\",\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"price_history\" (\n    \"changed_at\" TEXT COLLATE \"C\",\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"changed_at\" AS \"changed_at\", \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"PRICE_HISTORY\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_price_history\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_price_history\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"price_history\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_price_history_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_price_history_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n    CAST(\"d0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      *\n    FROM (\n      SELECT\n        p.*,\n        ROW_NUMBER() OVER (PARTITION BY PRODUCT_ID ORDER BY CHANGED_AT DESC) AS rn\n      FROM SHOP.PRICE_HISTORY AS OF SCN ${run_scn} p\n    )\n    WHERE\n      rn = 1\n  ) \"d0\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_price_history\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"price_history\\\"\"\n      columns = [\n        \"changed_at\",\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"price_history\" (\"changed_at\", \"amount\")\n  SELECT\n    \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n    CAST(\"d0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      *\n    FROM (\n      SELECT\n        p.*,\n        ROW_NUMBER() OVER (PARTITION BY PRODUCT_ID ORDER BY CHANGED_AT DESC) AS rn\n      FROM SHOP.PRICE_HISTORY AS OF SCN ${run_scn} p\n    )\n    WHERE\n      rn = 1\n  ) \"d0\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_price_history\"\n        result_table_name = \"sink_shop_price_history\"\n        query = \"SELECT * FROM src_shop_price_history\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_price_history\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"price_history\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n    CAST(\"d0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      *\n    FROM (\n      SELECT\n        p.*,\n        ROW_NUMBER() OVER (PARTITION BY PRODUCT_ID ORDER BY CHANGED_AT DESC) AS rn\n      FROM SHOP.PRICE_HISTORY AS OF SCN ${run_scn} p\n    )\n    WHERE\n      rn = 1\n  ) \"d0\"",
+        "dml_statement": "INSERT INTO \"shop\".\"price_history\" (\"changed_at\", \"amount\")\n  SELECT\n    \"d0\".\"CHANGED_AT\" AS \"changed_at\",\n    CAST(\"d0\".\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM (\n    SELECT\n      *\n    FROM (\n      SELECT\n        p.*,\n        ROW_NUMBER() OVER (PARTITION BY PRODUCT_ID ORDER BY CHANGED_AT DESC) AS rn\n      FROM SHOP.PRICE_HISTORY AS OF SCN ${run_scn} p\n    )\n    WHERE\n      rn = 1\n  ) \"d0\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_product",
+      "seatunnel_job_id": "JOB-shop_product_catalogue",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 10,
+        "source_projection": "SELECT\n  CAST(\"product\".\"PRODUCT_ID\" AS DECIMAL(10, 0)) AS \"product_id\",\n  CAST(\"product\".\"NAME\" AS TEXT(120)) AS \"product_name\",\n  CAST(\"category\".\"TITLE\" AS TEXT(80)) AS \"category_title\",\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\"\nFROM \"SHOP\".\"PRODUCT\" AS \"product\"\nINNER JOIN \"SHOP\".\"CATEGORY\" AS \"category\"\n  ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\"",
+        "target_relation": "\"shop\".\"product_catalogue\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_product",
+            "relation": "\"SHOP\".\"PRODUCT\"",
+            "schema": "SHOP",
+            "table": "PRODUCT",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_product",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_product_catalogue\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_product_catalogue\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_product",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_product",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_product",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_product",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "unordered-column-digest",
+            "expected": "EVERY_COMPILED_COLUMN_MATCHES"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_product",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_product_catalogue\nWHERE\n  \"product_name\" = '' OR \"category_title\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows",
+          "cdcFanOut.handling=snapshot-only: a change to one joined row rewrites many target rows, and there is no per-row CDC form for a join, so this job is snapshot-only",
+          "droppedFromSource ['SHOP.CATEGORY.CREATED_BY'] are omitted from the explicit column list, so the target table does not carry them even though the join still reads them",
+          "grain.uniqueness=asserted is not provable without the source profile; a duplicate-grain check in the validation contract is what makes the assertion true",
+          "referentialIntegrity=abandoned-by-design: orphan detection is expected to fail, so the orphan check is reported as informational rather than as a failure"
+        ],
+        "env": {
+          "job_name": "JOB-shop_product",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "",
+        "target": "\"\\\"shop\\\".\\\"product_catalogue\\\"\"",
+        "ddl": "shop_product_catalogue_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_product_catalogue_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"product_catalogue\\\"\"\n      columns = [\n        \"product_id\",\n        \"product_name\",\n        \"category_title\",\n        \"amount\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"product_catalogue\" (\n    \"product_id\" NUMERIC(10, 0),\n    \"product_name\" VARCHAR(120),\n    \"category_title\" VARCHAR(80),\n    \"amount\" NUMERIC(12, 2)\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"product_id\" AS \"product_id\", \"product_name\" AS \"product_name\", \"category_title\" AS \"category_title\", \"amount\" AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_product_catalogue\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_product_catalogue\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"product_catalogue\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_product_catalogue_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_product_catalogue_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"product\".\"PRODUCT_ID\" AS NUMERIC(10, 0)) AS \"product_id\",\n    CAST(\"product\".\"NAME\" AS VARCHAR(120)) AS \"product_name\",\n    CAST(\"category\".\"TITLE\" AS VARCHAR(80)) AS \"category_title\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF SCN ${run_scn} \"product\"\n  INNER JOIN \"SHOP\".\"CATEGORY\" AS OF SCN ${run_scn} \"category\"\n    ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_product_catalogue\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"product_catalogue\\\"\"\n      columns = [\n        \"product_id\",\n        \"product_name\",\n        \"category_title\",\n        \"amount\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"product_catalogue\" (\"product_id\", \"product_name\", \"category_title\", \"amount\")\n  SELECT\n    CAST(\"product\".\"PRODUCT_ID\" AS NUMERIC(10, 0)) AS \"product_id\",\n    CAST(\"product\".\"NAME\" AS VARCHAR(120)) AS \"product_name\",\n    CAST(\"category\".\"TITLE\" AS VARCHAR(80)) AS \"category_title\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF SCN ${run_scn} \"product\"\n  INNER JOIN \"SHOP\".\"CATEGORY\" AS OF SCN ${run_scn} \"category\"\n    ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_product_catalogue\"\n        result_table_name = \"sink_shop_product_catalogue\"\n        query = \"SELECT * FROM src_shop_product_catalogue\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_product_catalogue\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"product_catalogue\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"product\".\"PRODUCT_ID\" AS NUMERIC(10, 0)) AS \"product_id\",\n    CAST(\"product\".\"NAME\" AS VARCHAR(120)) AS \"product_name\",\n    CAST(\"category\".\"TITLE\" AS VARCHAR(80)) AS \"category_title\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF SCN ${run_scn} \"product\"\n  INNER JOIN \"SHOP\".\"CATEGORY\" AS OF SCN ${run_scn} \"category\"\n    ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\"",
+        "dml_statement": "INSERT INTO \"shop\".\"product_catalogue\" (\"product_id\", \"product_name\", \"category_title\", \"amount\")\n  SELECT\n    CAST(\"product\".\"PRODUCT_ID\" AS NUMERIC(10, 0)) AS \"product_id\",\n    CAST(\"product\".\"NAME\" AS VARCHAR(120)) AS \"product_name\",\n    CAST(\"category\".\"TITLE\" AS VARCHAR(80)) AS \"category_title\",\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\"\n  FROM \"SHOP\".\"PRODUCT\" AS OF SCN ${run_scn} \"product\"\n  INNER JOIN \"SHOP\".\"CATEGORY\" AS OF SCN ${run_scn} \"category\"\n    ON \"product\".\"CATEGORY_ID\" = \"category\".\"CATEGORY_ID\"",
+        "transform_sql": ""
+      }
+    },
+    {
+      "job_id": "JOB-shop_stock",
+      "seatunnel_job_id": "JOB-shop_stock_by_product",
+      "status": "READY",
+      "reason": "",
+      "duckdb": {
+        "order": 11,
+        "source_projection": "SELECT\n  CAST(\"AMOUNT\" AS DECIMAL(12, 2)) AS \"amount\",\n  \"PRODUCT_ID\" AS \"product_id\",\n  CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH' THEN \"QTY\" END) AS DECIMAL(10, 0)) AS \"qty_north\",\n  CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS DECIMAL(10, 0)) AS \"qty_south\",\n  SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END) AS \"__q_stock-by-product_unlisted\"\nFROM \"SHOP\".\"STOCK\" AS \"t0\"\nGROUP BY\n  \"PRODUCT_ID\"",
+        "target_relation": "\"shop\".\"stock_by_product\"",
+        "raw_relations": [
+          {
+            "view": "__RAW__shop_stock",
+            "relation": "\"SHOP\".\"STOCK\"",
+            "schema": "SHOP",
+            "table": "STOCK",
+            "in_catalog": false
+          }
+        ],
+        "checks": [
+          {
+            "check_id": "V-ROWCOUNT-JOB-shop_stock",
+            "type": "row-count-exact",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  1\nWHERE\n  (\n    SELECT\n      COUNT(*)\n    FROM __SOURCE__shop_stock_by_product\n  ) <> (\n    SELECT\n      COUNT(*)\n    FROM __TARGET__shop_stock_by_product\n  )",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-DIGEST-JOB-shop_stock",
+            "type": "chunk-digest-match",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "chunked-sha256",
+            "expected": "SOURCE_DIGEST_EQUALS_TARGET_DIGEST"
+          },
+          {
+            "check_id": "V-QUARANTINE-JOB-shop_stock",
+            "type": "quarantine-empty",
+            "category": "quality",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __QUARANTINE__shop_stock_by_product\nLIMIT 1",
+            "runtime_strategy": "tolerated-max=10",
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-NO-ORPHAN-JOB-shop_stock",
+            "type": "no-orphan-keys",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "ZERO_ORPHANS"
+          },
+          {
+            "check_id": "V-REFERENTIAL-JOB-shop_stock",
+            "type": "referential-integrity",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "catalog-fk-join",
+            "expected": "NO_REFERENTIAL_VIOLATIONS"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_OWNER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-PRINCIPAL-SHOP_READER",
+            "type": "principal-exists",
+            "category": "behaviour",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "role-inspection",
+            "expected": "PRINCIPAL_PRESENT_ON_BOTH_SIDES"
+          },
+          {
+            "check_id": "V-DELIVERY-JOB-shop_stock",
+            "type": "column-delivery",
+            "category": "reconciliation",
+            "severity": "error",
+            "sql": "SELECT\n  *\nFROM (\n  SELECT\n    'amount' AS \"column_name\"\n  FROM __SOURCE__shop_stock_by_product AS s\n  JOIN __TARGET__shop_stock_by_product AS t\n    USING (\"product_id\")\n  WHERE\n    s.\"amount\" IS DISTINCT FROM t.\"amount\"\n  UNION ALL\n  SELECT\n    'qty_north' AS \"column_name\"\n  FROM __SOURCE__shop_stock_by_product AS s\n  JOIN __TARGET__shop_stock_by_product AS t\n    USING (\"product_id\")\n  WHERE\n    s.\"qty_north\" IS DISTINCT FROM t.\"qty_north\"\n  UNION ALL\n  SELECT\n    'qty_south' AS \"column_name\"\n  FROM __SOURCE__shop_stock_by_product AS s\n  JOIN __TARGET__shop_stock_by_product AS t\n    USING (\"product_id\")\n  WHERE\n    s.\"qty_south\" IS DISTINCT FROM t.\"qty_south\"\n  UNION ALL\n  SELECT\n    '__q_stock-by-product_unlisted' AS \"column_name\"\n  FROM __SOURCE__shop_stock_by_product AS s\n  JOIN __TARGET__shop_stock_by_product AS t\n    USING (\"product_id\")\n  WHERE\n    s.\"__q_stock-by-product_unlisted\" IS DISTINCT FROM t.\"__q_stock-by-product_unlisted\"\n)\nLIMIT 20",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-NULL-JOB-shop_stock-product_id",
+            "type": "not-null-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_stock_by_product\nWHERE\n  \"product_id\" IS NULL\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-FIDELITY-EMPTY-LOB-JOB-shop_stock",
+            "type": "empty-lob-preserved",
+            "category": "fidelity",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_stock_by_product\nWHERE\n  \"product_id\" = ''\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          },
+          {
+            "check_id": "V-PIVOT-GRAIN-stock-by-product",
+            "type": "grain-uniqueness",
+            "category": "integrity",
+            "severity": "error",
+            "sql": null,
+            "runtime_strategy": "declared-grain",
+            "expected": "ONE_ROW_PER_GRAIN"
+          },
+          {
+            "check_id": "V-QUARANTINE-COLUMN-JOB-shop_stock-__q_stock-by-product_unlisted",
+            "type": "quarantine-sentinel",
+            "category": "quality",
+            "severity": "error",
+            "sql": "SELECT\n  1\nFROM __TARGET__shop_stock_by_product\nWHERE\n  NOT \"__q_stock-by-product_unlisted\" IS NULL\nLIMIT 1",
+            "runtime_strategy": null,
+            "expected": "ZERO_ROWS"
+          }
+        ],
+        "assumptions": [
+          "cast to numeric(12,2) with onOverflow=quarantine is enforced by the validation contract; the transform itself cannot route rows",
+          "pivot groups by the declared grain and aggregates the declared column; rows whose WAREHOUSE is NULL aggregate as NULL into every target column rather than being dropped",
+          "pivot onUnlistedValue=quarantine: source values outside intoColumns are counted into a __q_stock-by-product_unlisted column, and the quarantine sink filters on it"
+        ],
+        "env": {
+          "job_name": "JOB-shop_stock",
+          "mode": "READ_ONLY",
+          "snapshot": "${run_scn}",
+          "zero_rows_means_pass": true,
+          "nonzero_rows_means_fail": true,
+          "binds": [
+            "run_scn"
+          ]
+        }
+      },
+      "seatunnel": {
+        "kind": "transform",
+        "role": "",
+        "target": "\"\\\"shop\\\".\\\"stock_by_product\\\"\"",
+        "ddl": "shop_stock_by_product_ddl {\n    env {\n      parallelism = 1\n      job.mode = \"BATCH\"\n      job.name = \"shop_stock_by_product_ddl\"\n      checkpoint.interval = 0\n    }\n\n    ddl {\n      schema_save_mode = \"RECREATE_SCHEMA\"\n      target = \"\\\"shop\\\".\\\"stock_by_product\\\"\"\n      columns = [\n        \"amount\",\n        \"product_id\",\n        \"qty_north\",\n        \"qty_south\",\n        \"__q_stock-by-product_unlisted\",\n      ]\n      command_count = 1\n      create-table.sql = \"\"\"\n  CREATE TABLE IF NOT EXISTS \"shop\".\"stock_by_product\" (\n    \"amount\" NUMERIC(12, 2),\n    \"product_id\" TEXT COLLATE \"C\" NOT NULL,\n    \"qty_north\" NUMERIC(10, 0),\n    \"qty_south\" NUMERIC(10, 0),\n    \"__q_stock-by-product_unlisted\" INT,\n    CONSTRAINT \"pk_shop_stock_by_product\" PRIMARY KEY (\"product_id\")\n  )\n  \"\"\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT \"amount\" AS \"amount\", \"product_id\" AS \"product_id\", \"qty_north\" AS \"qty_north\", \"qty_south\" AS \"qty_south\", \"__q_stock-by-product_unlisted\" AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN ${run_scn}\n  WHERE 1 = 0\n  \"\"\"\n        fetch_size = 1\n        result_table_name = \"ddl_shape_shop_stock_by_product\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n          oracle.jdbc.defaultNChar = \"true\"\n        }\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"ddl_shape_shop_stock_by_product\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"stock_by_product\"\n        generate_sink_sql = true\n        schema_save_mode = \"RECREATE_SCHEMA\"\n        batch_size = 1\n        is_legacy = false\n      }\n    }\n  }",
+        "data": "shop_stock_by_product_data {\n    env {\n      parallelism = 4\n      job.mode = \"BATCH\"\n      job.name = \"shop_stock_by_product_data\"\n      checkpoint.interval = 10000\n      checkpoint.mode = \"AT_LEAST_ONCE\"\n    }\n\n    source {\n      Jdbc {\n        url = \"${SOURCE_JDBC_URL}\"\n        driver = \"oracle.jdbc.OracleDriver\"\n        user = \"${SOURCE_DB_USER}\"\n        password = \"${SOURCE_DB_PASSWORD}\"\n        query = \"\"\"\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    \"PRODUCT_ID\" AS \"product_id\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_north\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_south\",\n    SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END) AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN ${run_scn} \"t0\"\n  GROUP BY\n    \"PRODUCT_ID\"\n  \"\"\"\n        fetch_size = 2048\n        result_table_name = \"src_shop_stock_by_product\"\n        properties {\n          oracle.jdbc.TIMESTAMPAsDate = \"false\"\n        }\n      }\n    }\n\n    dml {\n      schema_save_mode = \"IGNORE\"\n      target = \"\\\"shop\\\".\\\"stock_by_product\\\"\"\n      columns = [\n        \"amount\",\n        \"product_id\",\n        \"qty_north\",\n        \"qty_south\",\n        \"__q_stock-by-product_unlisted\",\n      ]\n      statement = \"\"\"\n  INSERT INTO \"shop\".\"stock_by_product\" (\"amount\", \"product_id\", \"qty_north\", \"qty_south\", \"__q_stock-by-product_unlisted\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    \"PRODUCT_ID\" AS \"product_id\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_north\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_south\",\n    SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END) AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN ${run_scn} \"t0\"\n  GROUP BY\n    \"PRODUCT_ID\"\n  \"\"\"\n      write_mode = \"append\"\n    }\n\n    transform {\n      SQL {\n        source_table_name = \"src_shop_stock_by_product\"\n        result_table_name = \"sink_shop_stock_by_product\"\n        query = \"SELECT * FROM src_shop_stock_by_product\"\n        output_mode = \"APPEND\"\n        print_total = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_stock_by_product\"\n        url = \"${TARGET_JDBC_URL}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"stock_by_product\"\n        generate_sink_sql = false\n        schema_save_mode = \"IGNORE\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n\n    sink {\n      Jdbc {\n        source_table_name = \"sink_shop_stock_by_product\"\n        url = \"${QUARANTINE_JDBC_URL:-${TARGET_JDBC_URL}}\"\n        driver = \"org.postgresql.Driver\"\n        user = \"${TARGET_DB_USER}\"\n        password = \"${TARGET_DB_PASSWORD}\"\n        table_schema = \"shop\"\n        table_name = \"stock_by_product_quarantine\"\n        generate_sink_sql = true\n        schema_save_mode = \"CREATE_SCHEMA_WHEN_NOT_EXISTS\"\n        filter_sql = \"\\\"__q_stock-by-product_unlisted\\\" IS NOT NULL\"\n        batch_size = 1000\n        is_legacy = false\n      }\n    }\n  }",
+        "source_query": "SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    \"PRODUCT_ID\" AS \"product_id\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_north\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_south\",\n    SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END) AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN ${run_scn} \"t0\"\n  GROUP BY\n    \"PRODUCT_ID\"",
+        "dml_statement": "INSERT INTO \"shop\".\"stock_by_product\" (\"amount\", \"product_id\", \"qty_north\", \"qty_south\", \"__q_stock-by-product_unlisted\")\n  SELECT\n    CAST(\"AMOUNT\" AS NUMERIC(12, 2)) AS \"amount\",\n    \"PRODUCT_ID\" AS \"product_id\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'NORTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_north\",\n    CAST(SUM(CASE WHEN \"WAREHOUSE\" = 'SOUTH' THEN \"QTY\" END) AS NUMERIC(10, 0)) AS \"qty_south\",\n    SUM(CASE WHEN NOT \"WAREHOUSE\" IN ('NORTH', 'SOUTH') THEN 1 ELSE 0 END) AS \"__q_stock-by-product_unlisted\"\n  FROM \"SHOP\".\"STOCK\" AS OF SCN ${run_scn} \"t0\"\n  GROUP BY\n    \"PRODUCT_ID\"",
+        "transform_sql": ""
+      }
+    }
+  ]
+}
