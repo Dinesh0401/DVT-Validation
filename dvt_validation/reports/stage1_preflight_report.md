@@ -1,6 +1,6 @@
 # Stage-1 Pre-migration Preflight Verification Report (Oracle -> Postgresql)
 
-**Execution Timestamp:** 2026-10-05 16:28:39
+**Execution Timestamp:** 2026-10-05 22:03:26
 **Scope:** Pre-migration Contract vs Execution Plan Preflight (Zero DB Access)
 **Engines:** Source = `Oracle`, Target = `Postgresql`
 

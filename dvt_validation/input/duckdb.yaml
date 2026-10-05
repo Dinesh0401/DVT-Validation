@@ -30,7 +30,7 @@
 # ==========================================================================
 duckdb_jobs_version: '1.0'
 produced_by: migration-transpiler 3.0.0
-source_of_truth: D:\sqlglot\migration_transpiler_basic_new\migration_transpiler_basic\input\migration-spec-scenario-2-explicit-scn.yaml
+source_of_truth: input\migration-spec-scenario-2-explicit-scn.yaml
 engine:
   name: duckdb
   dialect: duckdb
