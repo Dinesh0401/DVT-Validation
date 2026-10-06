@@ -1,0 +1,42 @@
+{
+  "run_id": "116bf1092616",
+  "status": "SUCCESS",
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 2,
+    "passed": 2,
+    "failed": 0,
+    "warnings": 0
+  },
+  "problems": [
+    {
+      "type": "SQL_DIALECT_DIFFERENCE",
+      "severity": "INFO",
+      "message": "Source SQL has minor dialect differences (whitespace, alias style) between contract and SeaTunnel. Columns and source table match.",
+      "job": "JOB-hr_employees",
+      "file_a": "duckdb.yaml",
+      "path_a": "job.JOB-hr_employees.source.projection",
+      "file_b": "seatunnel.conf",
+      "path_b": "source.Jdbc.query",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_employees → sink_public_employees (query: SELECT * FROM src_public_employees).",
+      "job": "JOB-hr_employees",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation successful. YAML and SeaTunnel configuration are consistent.",
+  "yaml_file": "duckdb.yaml",
+  "conf_file": "seatunnel.conf"
+}
