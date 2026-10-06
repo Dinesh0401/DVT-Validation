@@ -1,9 +1,0 @@
-data_validation:
-  source_conn_name: oracle_source
-  target_conn_name: postgresql_target
-  schema_name: SHOP
-  table_name: ORDER_SUMMARY
-  target_schema_name: shop
-  target_table_name: order_summary
-  primary_keys: []
-  validation_type: Row
