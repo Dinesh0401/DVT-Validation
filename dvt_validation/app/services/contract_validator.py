@@ -26,7 +26,7 @@ def validate_contract(
     if not isinstance(engine, dict) or not engine.get("name"):
         problems.append(Problem(
             type="MISSING_ENGINE",
-            severity=Severity.ERROR,
+            severity=Severity.WARNING,
             message="Validation contract does not specify an engine name.",
             file_a=yaml_filename,
             path_a="engine.name",
