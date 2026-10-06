@@ -7,7 +7,7 @@ from pathlib import Path
 
 import requests
 
-API_URL = "http://localhost:8000/api/preflight/upload"
+API_URL = "http://localhost:8080/api/preflight/upload"
 INPUT_DIR = Path(__file__).parent / "input"
 
 def test_zip(zip_path: Path):
@@ -49,10 +49,10 @@ def test_zip(zip_path: Path):
 
     # Also test the retrieval endpoints
     run_id = data['run_id']
-    r2 = requests.get(f"http://localhost:8000/api/preflight/{run_id}")
+    r2 = requests.get(f"http://localhost:8080/api/preflight/{run_id}")
     print(f"\n  GET /{run_id}: {r2.status_code}")
 
-    r3 = requests.get(f"http://localhost:8000/api/preflight/{run_id}/report")
+    r3 = requests.get(f"http://localhost:8080/api/preflight/{run_id}/report")
     print(f"  GET /{run_id}/report: {r3.status_code} ({len(r3.text)} bytes)")
 
 
