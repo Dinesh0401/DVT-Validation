@@ -1,9 +1,11 @@
 """
 YAML Parser — parse and structurally validate the validation contract YAML.
 
-Everything is dynamic: the parser reads whatever jobs, columns, tables,
-checks, and schemas the YAML declares and normalises them into ``JobEntity``
-objects for downstream comparison.
+Supports all dynamic contract variants:
+- top-level 'job' or 'jobs' key (dict or list)
+- direct 'table' / 'columns' fields or 'projection' SQL queries
+- 'acquisition: snapshot' or explicit 'scn_snapshot' per job
+- schema-level source / target metadata
 """
 from __future__ import annotations
 
@@ -19,92 +21,63 @@ from app.models.preflight_models import (
     Severity,
     SourceEntity,
     TargetEntity,
-    TransformEntity,
 )
 
 
 # ---------------------------------------------------------------------------
-# Column extraction from SQL strings
+# Column and table extraction helpers
 # ---------------------------------------------------------------------------
-_SELECT_COL_RE = re.compile(
-    r"""
-    (?:AS\s+)?              # optional AS keyword
-    "([^"]+)"               # quoted identifier
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
-
-_ALIAS_RE = re.compile(
-    r"""\bAS\s+"([^"]+)"\s*""",
-    re.IGNORECASE,
-)
+_ALIAS_RE = re.compile(r"""\bAS\s+"?([a-zA-Z0-9_]+)"?\s*""", re.IGNORECASE)
 
 
 def _extract_alias_columns(sql: str | None) -> list[str]:
-    """
-    Extract the **target alias** column names from a SELECT projection.
-
-    For ``SELECT "FOO" AS "bar", "BAZ" AS "qux" FROM …``
-    returns ``["bar", "qux"]``.
-    """
+    """Extract column names or aliases from SELECT projection SQL."""
     if not sql:
         return []
-    # Only look at the SELECT clause (before FROM)
     upper = sql.upper()
-    from_idx = _find_top_level_from(upper)
+    from_idx = upper.find("FROM ")
     select_clause = sql[:from_idx] if from_idx > 0 else sql
-    return [m.group(1) for m in _ALIAS_RE.finditer(select_clause)]
-
-
-def _find_top_level_from(sql_upper: str) -> int:
-    """Find the position of the top-level FROM keyword (not inside subqueries)."""
-    depth = 0
-    i = 0
-    while i < len(sql_upper):
-        ch = sql_upper[i]
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-        elif depth == 0 and sql_upper[i:i + 5] == "FROM " or sql_upper[i:i + 5] == "FROM\n":
-            return i
-        i += 1
-    return -1
+    matches = [m.group(1) for m in _ALIAS_RE.finditer(select_clause)]
+    if matches:
+        return matches
+    # Fallback: comma-separated identifiers in SELECT clause
+    cols = []
+    cleaned = re.sub(r'(?i)^\s*SELECT\s+', '', select_clause)
+    for part in cleaned.split(","):
+        p = part.strip().split()
+        if p:
+            col_name = p[-1].strip('"\'` ')
+            if col_name and col_name.upper() not in ("SELECT", "DISTINCT"):
+                cols.append(col_name)
+    return cols
 
 
 def _extract_source_relation(sql: str | None) -> tuple[str | None, str | None]:
-    """
-    Extract schema.table from a FROM clause like ``FROM "HR"."EMPLOYEES" …``
-    Returns (schema, table) or (None, None).
-    """
+    """Extract (schema, table) from FROM clause in SQL string."""
     if not sql:
         return None, None
-    m = re.search(r'FROM\s+"([^"]+)"\s*\.\s*"([^"]+)"', sql, re.IGNORECASE)
+    m = re.search(r'FROM\s+["`]?([a-zA-Z0-9_]+)["`]?\s*\.\s*["`]?([a-zA-Z0-9_]+)["`]?', sql, re.IGNORECASE)
     if m:
         return m.group(1), m.group(2)
+    m2 = re.search(r'FROM\s+["`]?([a-zA-Z0-9_]+)["`]?', sql, re.IGNORECASE)
+    if m2:
+        return None, m2.group(1)
     return None, None
 
 
 def _has_scn_binding(sql: str | None) -> bool:
-    """Check if the SQL contains an SCN / snapshot binding."""
     if not sql:
         return False
     return bool(re.search(r'AS\s+OF\s+SCN\s+\$\{?\w+\}?', sql, re.IGNORECASE))
 
 
 # ---------------------------------------------------------------------------
-# Public API
+# Parser core
 # ---------------------------------------------------------------------------
-
 def parse_yaml(yaml_path: Path) -> tuple[dict[str, Any], list[JobEntity], list[Problem]]:
-    """
-    Parse the YAML validation contract and return
-    ``(raw_data, jobs_list, problems)``.
-    """
     problems: list[Problem] = []
     fname = yaml_path.name
 
-    # ---- Parse ----
     try:
         with open(yaml_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
@@ -122,42 +95,49 @@ def parse_yaml(yaml_path: Path) -> tuple[dict[str, Any], list[JobEntity], list[P
         problems.append(Problem(
             type="YAML_STRUCTURE_ERROR",
             severity=Severity.ERROR,
-            message="YAML root must be a mapping (dict), got " + type(data).__name__,
+            message="YAML root must be a mapping.",
             file_a=fname,
             stage="yaml_validation",
         ))
         return {}, [], problems
 
-    # ---- Required top-level sections ----
-    required_sections = {"engine", "job"}
-    for sec in required_sections:
-        if sec not in data:
-            problems.append(Problem(
-                type="MISSING_SECTION",
-                severity=Severity.ERROR,
-                message=f"Required top-level section '{sec}' is missing.",
-                file_a=fname,
-                path_a=sec,
-                stage="yaml_validation",
-            ))
+    # Global schema defaults
+    global_src_schema = data.get("source", {}).get("schema") if isinstance(data.get("source"), dict) else None
+    global_tgt_schema = data.get("target", {}).get("schema") if isinstance(data.get("target"), dict) else None
 
-    # ---- Validate acquisition ----
+    # Global acquisition mode
     acquisition = data.get("acquisition")
-    snapshot_required = acquisition == "snapshot"
+    global_snapshot_req = (acquisition == "snapshot")
 
-    # ---- Validate bindings ----
-    bindings = data.get("bindings", {})
-    snapshot_binding = None
-    if snapshot_required and isinstance(bindings, dict):
-        snapshot_binding = bindings.get("run_scn")
+    # Locate jobs section: try 'job' or 'jobs'
+    jobs_raw = data.get("job") if "job" in data else data.get("jobs")
+    if jobs_raw is None:
+        problems.append(Problem(
+            type="MISSING_SECTION",
+            severity=Severity.ERROR,
+            message="Required top-level section 'job' or 'jobs' is missing.",
+            file_a=fname,
+            path_a="job",
+            stage="yaml_validation",
+        ))
+        return data, [], problems
 
-    # ---- Parse jobs ----
-    jobs_section = data.get("job", {})
-    if not isinstance(jobs_section, dict):
+    # Normalize jobs_raw into list of (job_id, job_dict)
+    normalized_jobs: list[tuple[str, dict]] = []
+    if isinstance(jobs_raw, dict):
+        for k, v in jobs_raw.items():
+            if isinstance(v, dict):
+                normalized_jobs.append((str(k), v))
+    elif isinstance(jobs_raw, list):
+        for idx, item in enumerate(jobs_raw):
+            if isinstance(item, dict):
+                jid = str(item.get("id") or item.get("job_id") or f"JOB_{idx+1}")
+                normalized_jobs.append((jid, item))
+    else:
         problems.append(Problem(
             type="YAML_STRUCTURE_ERROR",
             severity=Severity.ERROR,
-            message="'job' section must be a mapping, got " + type(jobs_section).__name__,
+            message="'job' section must be a mapping or list.",
             file_a=fname,
             path_a="job",
             stage="yaml_validation",
@@ -167,8 +147,7 @@ def parse_yaml(yaml_path: Path) -> tuple[dict[str, Any], list[JobEntity], list[P
     jobs: list[JobEntity] = []
     seen_job_ids: set[str] = set()
 
-    for job_id, job_data in jobs_section.items():
-        # ---- Duplicate job check ----
+    for job_id, jdata in normalized_jobs:
         if job_id in seen_job_ids:
             problems.append(Problem(
                 type="DUPLICATE_JOB",
@@ -182,153 +161,114 @@ def parse_yaml(yaml_path: Path) -> tuple[dict[str, Any], list[JobEntity], list[P
             continue
         seen_job_ids.add(job_id)
 
-        if not isinstance(job_data, dict):
-            problems.append(Problem(
-                type="YAML_STRUCTURE_ERROR",
-                severity=Severity.ERROR,
-                message=f"Job '{job_id}' must be a mapping.",
-                file_a=fname,
-                path_a=f"job.{job_id}",
-                stage="yaml_validation",
-                job=job_id,
-            ))
-            continue
+        # ---- Parse Source ----
+        src_info = jdata.get("source", {})
+        src_info = src_info if isinstance(src_info, dict) else {}
 
-        # ---- Source ----
-        src_data = job_data.get("source", {})
-        projection_sql = src_data.get("projection") if isinstance(src_data, dict) else None
-        src_schema, src_table = _extract_source_relation(projection_sql)
-        src_columns = _extract_alias_columns(projection_sql)
+        projection_sql = src_info.get("projection")
+        src_table = src_info.get("table")
+        src_schema = src_info.get("schema") or global_src_schema
+        src_columns = src_info.get("columns", [])
+
+        if projection_sql:
+            parsed_schema, parsed_table = _extract_source_relation(projection_sql)
+            if parsed_schema:
+                src_schema = parsed_schema
+            if parsed_table:
+                src_table = parsed_table
+            if not src_columns:
+                src_columns = _extract_alias_columns(projection_sql)
+
         src_has_scn = _has_scn_binding(projection_sql)
 
-        source = SourceEntity(
+        source_entity = SourceEntity(
             schema_name=src_schema,
             table_name=src_table,
-            relation=src_data.get("projection_view") if isinstance(src_data, dict) else None,
-            columns=src_columns,
+            relation=src_info.get("projection_view") or src_table,
+            columns=list(src_columns) if isinstance(src_columns, list) else [],
             projection_sql=projection_sql,
             snapshot_binding="${run_scn}" if src_has_scn else None,
         )
 
-        # Raw relations
-        raw_rels = src_data.get("raw_relations", []) if isinstance(src_data, dict) else []
+        # Raw relations fallback
+        raw_rels = src_info.get("raw_relations", [])
         if isinstance(raw_rels, list):
             for rr in raw_rels:
                 if isinstance(rr, dict):
-                    if not source.schema_name and rr.get("schema"):
-                        source.schema_name = rr["schema"]
-                    if not source.table_name and rr.get("table"):
-                        source.table_name = rr["table"]
+                    if not source_entity.schema_name and rr.get("schema"):
+                        source_entity.schema_name = rr["schema"]
+                    if not source_entity.table_name and rr.get("table"):
+                        source_entity.table_name = rr["table"]
 
-        # ---- Target ----
-        tgt_data = job_data.get("target", {})
-        tgt_relation = tgt_data.get("relation", "") if isinstance(tgt_data, dict) else ""
-        tgt_schema, tgt_table = None, None
-        if isinstance(tgt_relation, str):
-            m = re.match(r'"([^"]+)"\s*\.\s*"([^"]+)"', tgt_relation)
+        # ---- Parse Target ----
+        tgt_info = jdata.get("target", {})
+        tgt_info = tgt_info if isinstance(tgt_info, dict) else {}
+
+        tgt_table = tgt_info.get("table")
+        tgt_schema = tgt_info.get("schema") or global_tgt_schema
+        tgt_columns = tgt_info.get("columns", [])
+        tgt_relation = tgt_info.get("relation") or tgt_info.get("view")
+
+        if isinstance(tgt_relation, str) and not tgt_table:
+            m = re.match(r'["`]?([a-zA-Z0-9_]+)["`]?\s*\.\s*["`]?([a-zA-Z0-9_]+)["`]?', tgt_relation)
             if m:
                 tgt_schema = m.group(1)
                 tgt_table = m.group(2)
+            else:
+                tgt_table = tgt_relation.strip('"\'` ')
 
-        target = TargetEntity(
+        if not tgt_columns:
+            tgt_columns = source_entity.columns
+
+        target_entity = TargetEntity(
             schema_name=tgt_schema,
             table_name=tgt_table,
-            relation=tgt_data.get("view") if isinstance(tgt_data, dict) else None,
-            columns=src_columns,  # contract: target receives the same columns
+            relation=tgt_relation if isinstance(tgt_relation, str) else tgt_table,
+            columns=list(tgt_columns) if isinstance(tgt_columns, list) else [],
         )
 
-        # ---- Validate source ----
-        if not source.columns and not isinstance(jobs_section.get(job_id), dict):
-            problems.append(Problem(
-                type="MISSING_SOURCE_COLUMNS",
-                severity=Severity.ERROR,
-                message=f"Job '{job_id}' source has no identifiable columns.",
-                file_a=fname,
-                path_a=f"job.{job_id}.source",
-                stage="yaml_validation",
-                job=job_id,
-            ))
+        # ---- Snapshot / SCN requirements ----
+        scn_snapshot = jdata.get("scn_snapshot", {})
+        scn_req = False
+        start_scn = None
+        if isinstance(scn_snapshot, dict):
+            scn_req = scn_snapshot.get("required", False)
+            start_scn = scn_snapshot.get("start_scn")
 
-        # ---- Validate target ----
-        if not tgt_schema and not tgt_table:
-            if isinstance(tgt_data, dict) and tgt_data:
-                problems.append(Problem(
-                    type="MISSING_TARGET_DEFINITION",
-                    severity=Severity.WARNING,
-                    message=f"Job '{job_id}' target relation could not be parsed.",
-                    file_a=fname,
-                    path_a=f"job.{job_id}.target",
-                    stage="yaml_validation",
-                    job=job_id,
-                ))
+        snapshot_required = global_snapshot_req or scn_req
 
-        # ---- Checks ----
-        checks_data = job_data.get("check", [])
-        checks_list = checks_data if isinstance(checks_data, list) else []
-
-        seen_check_ids: set[str] = set()
-        for idx, chk in enumerate(checks_list):
-            if not isinstance(chk, dict):
-                continue
-            cid = chk.get("check_id", "")
-            if cid in seen_check_ids:
-                problems.append(Problem(
-                    type="DUPLICATE_CHECK",
-                    severity=Severity.ERROR,
-                    message=f"Check '{cid}' is declared more than once in job '{job_id}'.",
-                    file_a=fname,
-                    path_a=f"job.{job_id}.check[{idx}]",
-                    stage="yaml_validation",
-                    job=job_id,
-                ))
-            seen_check_ids.add(cid)
-
-        # ---- Column duplicates ----
-        if src_columns:
-            col_lower = [c.lower() for c in src_columns]
-            seen_cols: set[str] = set()
-            for i, c in enumerate(col_lower):
-                if c in seen_cols:
+        # ---- Column duplicate check ----
+        cols = source_entity.columns
+        if cols:
+            seen_c: set[str] = set()
+            for c in cols:
+                c_str = str(c).lower()
+                if c_str in seen_c:
                     problems.append(Problem(
                         type="DUPLICATE_COLUMN",
                         severity=Severity.ERROR,
-                        message=f"Column '{src_columns[i]}' is declared more than once in job '{job_id}' source projection.",
+                        message=f"Column '{c}' is declared more than once in job '{job_id}'.",
                         file_a=fname,
-                        path_a=f"job.{job_id}.source.projection",
+                        path_a=f"job.{job_id}.columns",
                         stage="yaml_validation",
                         job=job_id,
                     ))
-                seen_cols.add(c)
+                seen_c.add(c_str)
 
-        # ---- Build entity ----
+        # ---- Checks ----
+        checks_data = jdata.get("check") or jdata.get("checks") or []
+        checks_list = checks_data if isinstance(checks_data, list) else []
+
         job_entity = JobEntity(
             job_id=job_id,
-            source=source,
-            target=target,
-            columns=src_columns,
+            source=source_entity,
+            target=target_entity,
+            columns=cols,
             checks=[c for c in checks_list if isinstance(c, dict)],
             snapshot_required=snapshot_required,
-            snapshot_binding=snapshot_binding,
-            raw_data=job_data,
+            snapshot_binding=str(start_scn) if start_scn else None,
+            raw_data=jdata,
         )
         jobs.append(job_entity)
-
-    # ---- Summary consistency ----
-    summary = data.get("summary", {})
-    if isinstance(summary, dict):
-        declared_jobs = summary.get("jobs")
-        if declared_jobs is not None and isinstance(declared_jobs, int):
-            actual_jobs = len(jobs)
-            if declared_jobs != actual_jobs:
-                problems.append(Problem(
-                    type="SUMMARY_MISMATCH",
-                    severity=Severity.WARNING,
-                    message=f"Summary declares {declared_jobs} job(s) but {actual_jobs} were found.",
-                    file_a=fname,
-                    path_a="summary.jobs",
-                    expected=declared_jobs,
-                    actual=actual_jobs,
-                    stage="yaml_validation",
-                ))
 
     return data, jobs, problems

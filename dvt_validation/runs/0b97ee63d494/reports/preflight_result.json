@@ -1,0 +1,42 @@
+{
+  "run_id": "0b97ee63d494",
+  "status": "FAILED",
+  "stage": "file_discovery",
+  "summary": {
+    "total_checks": 2,
+    "passed": 0,
+    "failed": 2,
+    "warnings": 0
+  },
+  "problems": [
+    {
+      "type": "MISSING_INPUT",
+      "severity": "ERROR",
+      "message": "Could not identify validation YAML in the extracted ZIP.",
+      "job": null,
+      "file_a": null,
+      "path_a": null,
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "file_discovery"
+    },
+    {
+      "type": "MISSING_INPUT",
+      "severity": "ERROR",
+      "message": "Could not identify SeaTunnel .conf file in the extracted ZIP.",
+      "job": null,
+      "file_a": null,
+      "path_a": null,
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "file_discovery"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": null,
+  "conf_file": null
+}

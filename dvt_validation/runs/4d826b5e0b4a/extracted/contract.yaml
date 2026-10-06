@@ -1,0 +1,10 @@
+
+version: "1.0"
+jobs:
+  - id: JOB_PAYROLL
+    source:
+      table: SALARIES
+      columns: [EMP_ID, SALARY, BONUS, TAX_DEDUCTION]
+    target:
+      table: salaries
+      columns: [emp_id, salary, bonus, tax_deduction]
