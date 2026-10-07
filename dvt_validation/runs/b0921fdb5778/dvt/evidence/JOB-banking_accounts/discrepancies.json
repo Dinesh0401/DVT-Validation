@@ -1,30 +1,9 @@
 {
   "key_column": "account_id",
-  "summary": "Target (PostgreSQL) has 2 extra record(s) not found in Source (Oracle) [Keys: 1003, 1004]. Detected 2 column value discrepancy/discrepancies across shared records.",
-  "extra_in_target_count": 2,
+  "summary": "Detected 2 column value discrepancy/discrepancies across shared records.",
+  "extra_in_target_count": 0,
   "missing_in_target_count": 0,
-  "extra_in_target_records": [
-    {
-      "account_id": 1003,
-      "customer_id": 103,
-      "account_type": "SAVINGS",
-      "balance": "3500.00",
-      "branch_code": "BR-02",
-      "open_date": "2026-02-15 09:30:00",
-      "status": "ACTIVE",
-      "is_active": 1
-    },
-    {
-      "account_id": 1004,
-      "customer_id": 104,
-      "account_type": "CHECKING",
-      "balance": "8900.50",
-      "branch_code": "BR-03",
-      "open_date": "2026-03-01 14:15:00",
-      "status": "PENDING",
-      "is_active": 1
-    }
-  ],
+  "extra_in_target_records": [],
   "missing_in_target_records": [],
   "sample_value_mismatches": [
     {
