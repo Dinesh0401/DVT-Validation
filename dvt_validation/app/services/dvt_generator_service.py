@@ -52,8 +52,23 @@ def generate_dvt_manifest(
         src_engine = "oracle"
         tgt_engine = "postgresql"
 
-        # Check types specified in job or defaults
-        check_names = ["schema", "row_count", "column"]
+        # Check types specified dynamically from contract
+        check_names: list[str] = ["schema", "row_count"]
+        for c in job.checks:
+            if isinstance(c, dict):
+                ctype = str(c.get("type", "")).lower()
+                if "digest" in ctype or "checksum" in ctype or "chunk" in ctype:
+                    if "digest" not in check_names:
+                        check_names.append("digest")
+                elif "aggregate" in ctype or "sum" in ctype:
+                    if "aggregate" not in check_names:
+                        check_names.append("aggregate")
+                elif "null" in ctype:
+                    if "null_check" not in check_names:
+                        check_names.append("null_check")
+                elif "column" in ctype:
+                    if "column" not in check_names:
+                        check_names.append("column")
         if job.snapshot_required:
             check_names.append("snapshot_scn")
 

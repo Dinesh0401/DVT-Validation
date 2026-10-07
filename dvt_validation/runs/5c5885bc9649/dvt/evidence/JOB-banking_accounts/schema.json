@@ -1,0 +1,29 @@
+{
+  "check_id": "JOB-banking_accounts_schema",
+  "job": "JOB-banking_accounts",
+  "check_type": "schema",
+  "status": "PASSED",
+  "expected": [
+    "status",
+    "is_active",
+    "account_type",
+    "customer_id",
+    "branch_code",
+    "balance",
+    "open_date",
+    "account_id"
+  ],
+  "actual": [
+    "status",
+    "is_active",
+    "open_date",
+    "account_type",
+    "customer_id",
+    "branch_code",
+    "balance",
+    "account_id"
+  ],
+  "problems": [],
+  "message": "Schema validation passed.",
+  "duration_ms": 98
+}

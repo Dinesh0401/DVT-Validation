@@ -1,0 +1,11 @@
+{
+  "run_id": "5685abff011f",
+  "preflight": "REVIEW",
+  "migration": "MIGRATION_SUCCESS",
+  "dvt": "DVT_FAILED",
+  "overall_status": "FAILED",
+  "can_execute_dvt": true,
+  "updated_at": "2026-10-07T12:59:27.580825+00:00",
+  "preflight_message": "Preflight validation completed with warnings requiring review before migration.",
+  "migration_message": "SeaTunnel execution completed"
+}

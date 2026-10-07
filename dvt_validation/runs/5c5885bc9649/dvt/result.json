@@ -1,0 +1,95 @@
+{
+  "run_id": "5c5885bc9649",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Discrepancies detected between source and target tables in 1 check(s).",
+  "summary": {
+    "total_checks": 5,
+    "passed": 4,
+    "failed": 1
+  },
+  "tables": {
+    "JOB-banking_accounts": {
+      "job_id": "JOB-banking_accounts",
+      "source": "banking.ACCOUNTS",
+      "target": "public.accounts",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB-banking_accounts_schema",
+          "job": "JOB-banking_accounts",
+          "check_type": "schema",
+          "status": "PASSED",
+          "expected": [
+            "status",
+            "is_active",
+            "account_type",
+            "customer_id",
+            "branch_code",
+            "balance",
+            "open_date",
+            "account_id"
+          ],
+          "actual": [
+            "status",
+            "is_active",
+            "open_date",
+            "account_type",
+            "customer_id",
+            "branch_code",
+            "balance",
+            "account_id"
+          ],
+          "problems": [],
+          "message": "Schema validation passed.",
+          "duration_ms": 98
+        },
+        {
+          "check_id": "JOB-banking_accounts_row_count",
+          "job": "JOB-banking_accounts",
+          "check_type": "row_count",
+          "status": "PASSED",
+          "expected": 2,
+          "actual": 2,
+          "difference": 0,
+          "message": "Row count matches.",
+          "duration_ms": 175
+        },
+        {
+          "check_id": "JOB-banking_accounts_digest",
+          "job": "JOB-banking_accounts",
+          "check_type": "digest",
+          "status": "FAILED",
+          "expected": "474d081c1491cdb36aab089fd000f43d6160e16ca86d1a7af20a62dc32be9695",
+          "actual": "d88a764e7376b654534a1936eb3704b856a89b0d372e8c44950140433b48b044",
+          "message": "Data digest mismatch between Oracle source projection and PostgreSQL target.",
+          "duration_ms": 188
+        }
+      ]
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 282
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 90
+    }
+  ]
+}

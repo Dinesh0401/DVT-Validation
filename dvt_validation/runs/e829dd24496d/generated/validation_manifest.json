@@ -1,0 +1,38 @@
+{
+  "run_id": "e829dd24496d",
+  "generated_at": "2026-10-07T12:59:16.496865+00:00",
+  "stage": "preflight",
+  "preflight_status": "REVIEW",
+  "can_execute_seatunnel": false,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB_TEST_GATE",
+      "source": {
+        "engine": "oracle",
+        "schema": "public",
+        "table": "CUSTOMER",
+        "columns": [
+          "ID",
+          "NAME"
+        ],
+        "projection_sql": null,
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "customer",
+        "columns": [
+          "id",
+          "name"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "run_id": "ffbe6fb1d526",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Discrepancies detected between source and target tables in 2 check(s).",
+  "summary": {
+    "total_checks": 5,
+    "passed": 3,
+    "failed": 2
+  },
+  "tables": {
+    "JOB-banking_accounts": {
+      "job_id": "JOB-banking_accounts",
+      "source": "banking.ACCOUNTS",
+      "target": "public.accounts",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB-banking_accounts_schema",
+          "job": "JOB-banking_accounts",
+          "check_type": "schema",
+          "status": "PASSED",
+          "expected": [
+            "is_active",
+            "branch_code",
+            "open_date",
+            "customer_id",
+            "status",
+            "account_id",
+            "account_type",
+            "balance"
+          ],
+          "actual": [
+            "is_active",
+            "branch_code",
+            "open_date",
+            "customer_id",
+            "status",
+            "account_id",
+            "account_type",
+            "balance"
+          ],
+          "problems": [],
+          "message": "Schema validation passed.",
+          "duration_ms": 89
+        },
+        {
+          "check_id": "JOB-banking_accounts_row_count",
+          "job": "JOB-banking_accounts",
+          "check_type": "row_count",
+          "status": "FAILED",
+          "expected": "Row count query execution",
+          "actual": "Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+          "difference": null,
+          "message": "Row count query error: Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+          "duration_ms": 101
+        },
+        {
+          "check_id": "JOB-banking_accounts_digest",
+          "job": "JOB-banking_accounts",
+          "check_type": "digest",
+          "status": "FAILED",
+          "expected": "SHA-256 digest computation",
+          "actual": "Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+          "message": "Digest calculation error: Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+          "duration_ms": 102
+        }
+      ]
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 314
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 86
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "fc86b5e8056c",
+  "version": "1.0",
+  "generated_at": "2026-10-07T13:04:30.464486+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_TEST_GATE",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.CUSTOMER"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.customer"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

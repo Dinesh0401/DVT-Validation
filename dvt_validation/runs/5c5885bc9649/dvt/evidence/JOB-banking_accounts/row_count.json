@@ -1,0 +1,11 @@
+{
+  "check_id": "JOB-banking_accounts_row_count",
+  "job": "JOB-banking_accounts",
+  "check_type": "row_count",
+  "status": "PASSED",
+  "expected": 2,
+  "actual": 2,
+  "difference": 0,
+  "message": "Row count matches.",
+  "duration_ms": 175
+}

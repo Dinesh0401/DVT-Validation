@@ -1,0 +1,55 @@
+{
+  "run_id": "e27cd2379233",
+  "generated_at": "2026-10-07T12:59:51.808306+00:00",
+  "stage": "preflight",
+  "preflight_status": "READY",
+  "can_execute_seatunnel": true,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB-hr_employees",
+      "source": {
+        "engine": "oracle",
+        "schema": "HR",
+        "table": "EMPLOYEES",
+        "columns": [
+          "employee_id",
+          "first_name",
+          "last_name",
+          "email",
+          "salary",
+          "hire_date",
+          "employee_status",
+          "is_manager",
+          "department_code"
+        ],
+        "projection_sql": "SELECT\n  \"EMPLOYEE_ID\" AS \"employee_id\",\n  NULLIF(\"FIRST_NAME\", '') AS \"first_name\",\n  NULLIF(\"LAST_NAME\", '') AS \"last_name\",\n  NULLIF(\"EMAIL\", '') AS \"email\",\n  \"SALARY\" AS \"salary\",\n  \"HIRE_DATE\" AS \"hire_date\",\n  NULLIF(\"EMPLOYEE_STATUS\", '') AS \"employee_status\",\n  \"IS_MANAGER\" AS \"is_manager\",\n  NULLIF(\"DEPARTMENT_CODE\", '') AS \"department_code\"\nFROM \"HR\".\"EMPLOYEES\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "employees",
+        "columns": [
+          "employee_id",
+          "first_name",
+          "last_name",
+          "email",
+          "salary",
+          "hire_date",
+          "employee_status",
+          "is_manager",
+          "department_code"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "digest",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

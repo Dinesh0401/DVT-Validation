@@ -1,0 +1,47 @@
+{
+  "run_id": "77a884d9e757",
+  "generated_at": "2026-10-07T12:59:51.256506+00:00",
+  "stage": "preflight",
+  "preflight_status": "READY",
+  "can_execute_seatunnel": true,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB-admin_orders",
+      "source": {
+        "engine": "oracle",
+        "schema": "admin",
+        "table": "ORDERS",
+        "columns": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "amount",
+          "status"
+        ],
+        "projection_sql": "SELECT\n  \"ORDER_ID\" AS \"order_id\",\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  \"ORDER_DATE\" AS \"order_date\",\n  \"AMOUNT\" AS \"amount\",\n  NULLIF(\"STATUS\", '') AS \"status\"\nFROM \"admin\".\"ORDERS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "orders",
+        "columns": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "amount",
+          "status"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "digest",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

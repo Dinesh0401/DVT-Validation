@@ -11,6 +11,7 @@ Zero business logic hardcoding — all operations work generically for any table
 from __future__ import annotations
 
 import hashlib
+import re
 from decimal import Decimal
 from typing import Any
 
@@ -61,15 +62,26 @@ class OracleService(BaseDbService):
         except Exception as exc:
             return False, f"Oracle Connection Error: {self.sanitize_error(exc)}"
 
+    def _adapt_oracle_sql(self, sql: str | None) -> str | None:
+        """Adapt transpiled SQL for Oracle dialect (remove AS before table aliases, normalize relation casing)."""
+        if not sql:
+            return sql
+        # 1. Remove 'AS' before table aliases in FROM/JOIN clauses (Oracle doesn't allow 'FROM table AS alias')
+        adapted = re.sub(r'(\b(?:FROM|JOIN)\s+[^\s]+)\s+AS\s+([a-zA-Z0-9_"]+)', r'\1 \2', sql, flags=re.IGNORECASE)
+        # 2. Normalize quoted lowercase schema.table to uppercase Oracle identifiers: "schema"."table" -> SCHEMA.TABLE
+        adapted = re.sub(r'"([a-zA-Z0-9_]+)"\."([a-zA-Z0-9_]+)"', lambda m: f'{m.group(1).upper()}.{m.group(2).upper()}', adapted)
+        return adapted
+
     def fetch_row_count(self, projection_sql: str | None, table_name: str | None, schema_name: str | None) -> int:
         """Fetch projected source row count from Oracle."""
-        if projection_sql:
+        adapted_sql = self._adapt_oracle_sql(projection_sql)
+        if adapted_sql:
             # Wrap projection query in count
-            count_sql = f"SELECT COUNT(*) FROM ({projection_sql})"
+            count_sql = f"SELECT COUNT(*) FROM ({adapted_sql})"
         elif schema_name and table_name:
-            count_sql = f'SELECT COUNT(*) FROM "{schema_name}"."{table_name}"'
+            count_sql = f'SELECT COUNT(*) FROM "{schema_name.upper()}"."{table_name.upper()}"'
         elif table_name:
-            count_sql = f'SELECT COUNT(*) FROM "{table_name}"'
+            count_sql = f'SELECT COUNT(*) FROM "{table_name.upper()}"'
         else:
             raise ValueError("Insufficient relation metadata for Oracle row count query.")
 
@@ -77,12 +89,13 @@ class OracleService(BaseDbService):
 
     def fetch_aggregate(self, metric_expr: str, projection_sql: str | None, table_name: str | None, schema_name: str | None) -> Decimal:
         """Execute aggregate query on Oracle (e.g. SUM(amount), AVG(salary))."""
-        if projection_sql:
-            sql = f"SELECT {metric_expr} FROM ({projection_sql})"
+        adapted_sql = self._adapt_oracle_sql(projection_sql)
+        if adapted_sql:
+            sql = f"SELECT {metric_expr} FROM ({adapted_sql})"
         elif schema_name and table_name:
-            sql = f'SELECT {metric_expr} FROM "{schema_name}"."{table_name}"'
+            sql = f'SELECT {metric_expr} FROM "{schema_name.upper()}"."{table_name.upper()}"'
         else:
-            sql = f'SELECT {metric_expr} FROM "{table_name}"'
+            sql = f'SELECT {metric_expr} FROM "{table_name.upper()}"'
 
         val = self._execute_scalar(sql)
         if val is None:
@@ -91,12 +104,13 @@ class OracleService(BaseDbService):
 
     def fetch_null_count(self, column_name: str, projection_sql: str | None, table_name: str | None, schema_name: str | None) -> int:
         """Fetch null count for a column on Oracle."""
-        if projection_sql:
-            sql = f'SELECT COUNT(*) FROM ({projection_sql}) WHERE "{column_name}" IS NULL'
+        adapted_sql = self._adapt_oracle_sql(projection_sql)
+        if adapted_sql:
+            sql = f'SELECT COUNT(*) FROM ({adapted_sql}) WHERE "{column_name}" IS NULL'
         elif schema_name and table_name:
-            sql = f'SELECT COUNT(*) FROM "{schema_name}"."{table_name}" WHERE "{column_name}" IS NULL'
+            sql = f'SELECT COUNT(*) FROM "{schema_name.upper()}"."{table_name.upper()}" WHERE "{column_name}" IS NULL'
         else:
-            sql = f'SELECT COUNT(*) FROM "{table_name}" WHERE "{column_name}" IS NULL'
+            sql = f'SELECT COUNT(*) FROM "{table_name.upper()}" WHERE "{column_name}" IS NULL'
 
         return self._execute_scalar_int(sql)
 
@@ -109,12 +123,13 @@ class OracleService(BaseDbService):
         col_exprs = [f"COALESCE(TO_CHAR(\"{c}\"), 'NULL')" for c in columns]
         concat_expr = " || '|' || ".join(col_exprs)
 
-        if projection_sql:
-            sql = f"SELECT {concat_expr} AS row_str FROM ({projection_sql})"
+        adapted_sql = self._adapt_oracle_sql(projection_sql)
+        if adapted_sql:
+            sql = f"SELECT {concat_expr} AS row_str FROM ({adapted_sql})"
         elif schema_name and table_name:
-            sql = f'SELECT {concat_expr} AS row_str FROM "{schema_name}"."{table_name}"'
+            sql = f'SELECT {concat_expr} AS row_str FROM "{schema_name.upper()}"."{table_name.upper()}"'
         else:
-            sql = f'SELECT {concat_expr} AS row_str FROM "{table_name}"'
+            sql = f'SELECT {concat_expr} AS row_str FROM "{table_name.upper()}"'
 
         rows = self._execute_all(sql)
         hasher = hashlib.sha256()
@@ -135,8 +150,7 @@ class OracleService(BaseDbService):
                 res = cur.fetchone()
                 return res[0] if res else None
         except Exception as exc:
-            # Fallback for offline/test mock mode
-            return None
+            raise RuntimeError(f"Oracle query error: {self.sanitize_error(exc)}")
 
     def _execute_scalar_int(self, sql: str) -> int:
         val = self._execute_scalar(sql)
@@ -153,8 +167,8 @@ class OracleService(BaseDbService):
                 cur = conn.cursor()
                 cur.execute(sql)
                 return cur.fetchall()
-        except Exception:
-            return []
+        except Exception as exc:
+            raise RuntimeError(f"Oracle query error: {self.sanitize_error(exc)}")
 
 
 class PostgresService(BaseDbService):
@@ -270,8 +284,8 @@ class PostgresService(BaseDbService):
                 cur.execute(sql)
                 res = cur.fetchone()
                 return res[0] if res else None
-        except Exception:
-            return None
+        except Exception as exc:
+            raise RuntimeError(f"PostgreSQL query error: {self.sanitize_error(exc)}")
 
     def _execute_scalar_int(self, sql: str) -> int:
         val = self._execute_scalar(sql)
@@ -289,8 +303,8 @@ class PostgresService(BaseDbService):
                 cur = conn.cursor()
                 cur.execute(sql)
                 return cur.fetchall()
-        except Exception:
-            return []
+        except Exception as exc:
+            raise RuntimeError(f"PostgreSQL query error: {self.sanitize_error(exc)}")
 
     def _execute_params(self, sql: str, params: tuple) -> list[tuple]:
         try:
@@ -302,5 +316,5 @@ class PostgresService(BaseDbService):
                 cur = conn.cursor()
                 cur.execute(sql, params)
                 return cur.fetchall()
-        except Exception:
-            return []
+        except Exception as exc:
+            raise RuntimeError(f"PostgreSQL query error: {self.sanitize_error(exc)}")

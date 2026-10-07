@@ -1,0 +1,26 @@
+{
+  "check_id": "JOB-banking_accounts_schema",
+  "job": "JOB-banking_accounts",
+  "check_type": "schema",
+  "status": "FAILED",
+  "expected": [
+    "open_date",
+    "status",
+    "balance",
+    "account_type",
+    "branch_code",
+    "account_id",
+    "is_active",
+    "customer_id"
+  ],
+  "actual": "Table/Columns verified",
+  "problems": [
+    {
+      "type": "MISSING_TABLE",
+      "expected": "public.accounts",
+      "actual": "Table does not exist in PostgreSQL"
+    }
+  ],
+  "message": "Schema validation failed with 1 issues.",
+  "duration_ms": 105
+}

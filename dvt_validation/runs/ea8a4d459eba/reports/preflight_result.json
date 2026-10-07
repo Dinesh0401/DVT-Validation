@@ -1,0 +1,30 @@
+{
+  "run_id": "ea8a4d459eba",
+  "status": "READY",
+  "can_execute_seatunnel": true,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 5,
+    "passed": 5,
+    "failed": 0,
+    "warnings": 0
+  },
+  "problems": [
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_orders → sink_public_orders (query: SELECT * FROM src_public_orders).",
+      "job": "JOB-admin_orders",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation successful. YAML and SeaTunnel configuration are consistent.",
+  "yaml_file": "duckdb.yaml",
+  "conf_file": "seatunnel.conf"
+}

@@ -1,0 +1,10 @@
+{
+  "check_id": "JOB-banking_accounts_digest",
+  "job": "JOB-banking_accounts",
+  "check_type": "digest",
+  "status": "FAILED",
+  "expected": "474d081c1491cdb36aab089fd000f43d6160e16ca86d1a7af20a62dc32be9695",
+  "actual": "d88a764e7376b654534a1936eb3704b856a89b0d372e8c44950140433b48b044",
+  "message": "Data digest mismatch between Oracle source projection and PostgreSQL target.",
+  "duration_ms": 188
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "aa4d4b135bfb",
+  "version": "1.0",
+  "generated_at": "2026-10-07T13:04:31.473493+00:00",
+  "validations": [
+    {
+      "job_id": "JOB-hr_employees",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "HR.EMPLOYEES"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.employees"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

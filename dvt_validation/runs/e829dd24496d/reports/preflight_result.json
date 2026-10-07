@@ -1,0 +1,56 @@
+{
+  "run_id": "e829dd24496d",
+  "status": "REVIEW",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 3,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 2
+  },
+  "problems": [
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_cust → sink_cust (query: SELECT ID AS id, NAME AS name FROM src_cust).",
+      "job": "JOB_TEST_GATE",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "job.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation completed with warnings requiring review before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

@@ -1,0 +1,11 @@
+{
+  "check_id": "JOB-banking_accounts_row_count",
+  "job": "JOB-banking_accounts",
+  "check_type": "row_count",
+  "status": "FAILED",
+  "expected": "Row count query execution",
+  "actual": "Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+  "difference": null,
+  "message": "Row count query error: Oracle query error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+  "duration_ms": 101
+}

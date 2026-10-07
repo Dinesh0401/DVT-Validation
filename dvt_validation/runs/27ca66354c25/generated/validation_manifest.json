@@ -1,0 +1,39 @@
+{
+  "run_id": "27ca66354c25",
+  "generated_at": "2026-10-07T12:59:27.849258+00:00",
+  "stage": "preflight",
+  "preflight_status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB_SCN",
+      "source": {
+        "engine": "oracle",
+        "schema": "public",
+        "table": "TRANSACTIONS",
+        "columns": [
+          "TX_ID",
+          "AMOUNT"
+        ],
+        "projection_sql": null,
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "transactions",
+        "columns": [
+          "tx_id",
+          "amount"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

@@ -19,6 +19,10 @@ INPUT_DIR = Path(__file__).parent / "input"
 client = TestClient(app)
 
 
+import pytest
+
+
+@pytest.mark.parametrize("zip_path", sorted(INPUT_DIR.glob("*.zip")), ids=lambda p: p.name)
 def test_zip(zip_path: Path):
     print(f"\n{'='*70}")
     print(f"Testing ZIP Package: {zip_path.name}")

@@ -166,142 +166,293 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
         # --- Check 2: Schema Validation ---
         if "schema" in requested_checks:
             t_start = time.perf_counter()
-            schema_meta = postgres_svc.inspect_schema_metadata(tgt_schema, tgt_table)
-            dur = int((time.perf_counter() - t_start) * 1000)
+            expected_cols = {c.lower() for c in tgt_cols}
+            if not pg_ok:
+                chk_res = {
+                    "check_id": f"{job_id}_schema",
+                    "job": job_id,
+                    "check_type": "schema",
+                    "status": "FAILED",
+                    "expected": list(expected_cols),
+                    "actual": "Database unreachable",
+                    "problems": [{"type": "DB_CONNECTION_OFFLINE", "expected": "PostgreSQL connection", "actual": pg_msg}],
+                    "message": "Cannot validate schema: PostgreSQL database is offline.",
+                    "duration_ms": 0,
+                }
+                job_passed = False
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "schema.json", chk_res)
+            else:
+                schema_meta = postgres_svc.inspect_schema_metadata(tgt_schema, tgt_table)
+                dur = int((time.perf_counter() - t_start) * 1000)
 
-            problems = []
-            if not schema_meta.get("table_exists", False):
-                # If DB offline, fallback check
-                if pg_ok:
+                problems = []
+                if not schema_meta.get("table_exists", False):
                     problems.append({
                         "type": "MISSING_TABLE",
                         "expected": f"{tgt_schema}.{tgt_table}",
-                        "actual": "Table does not exist in PostgreSQL"
+                        "actual": "Table does not exist in PostgreSQL",
                     })
 
-            actual_cols = set(schema_meta.get("columns", {}).keys())
-            expected_cols = {c.lower() for c in tgt_cols}
+                actual_cols = set(schema_meta.get("columns", {}).keys())
 
-            if actual_cols:
-                missing = expected_cols - actual_cols
-                extra = actual_cols - expected_cols
-                for m in sorted(missing):
-                    problems.append({
-                        "type": "MISSING_COLUMN",
-                        "expected": m,
-                        "actual": "Column missing in PostgreSQL target table"
-                    })
-                for e in sorted(extra):
-                    problems.append({
-                        "type": "EXTRA_COLUMN",
-                        "expected": None,
-                        "actual": f"Column '{e}' exists in PostgreSQL target but not in contract"
-                    })
+                if actual_cols:
+                    missing = expected_cols - actual_cols
+                    extra = actual_cols - expected_cols
+                    for m in sorted(missing):
+                        problems.append({
+                            "type": "MISSING_COLUMN",
+                            "expected": m,
+                            "actual": "Column missing in PostgreSQL target table",
+                        })
+                    for e in sorted(extra):
+                        problems.append({
+                            "type": "EXTRA_COLUMN",
+                            "expected": None,
+                            "actual": f"Column '{e}' exists in PostgreSQL target but not in contract",
+                        })
 
-            chk_status = "FAILED" if problems else "PASSED"
-            if chk_status == "FAILED":
-                job_passed = False
+                chk_status = "FAILED" if problems else "PASSED"
+                if chk_status == "FAILED":
+                    job_passed = False
 
-            chk_res = {
-                "check_id": f"{job_id}_schema",
-                "job": job_id,
-                "check_type": "schema",
-                "status": chk_status,
-                "expected": list(expected_cols),
-                "actual": list(actual_cols) if actual_cols else "Table/Columns verified",
-                "problems": problems,
-                "message": f"Schema validation {'passed' if chk_status == 'PASSED' else 'failed with ' + str(len(problems)) + ' issues'}.",
-                "duration_ms": dur,
-            }
-            job_checks.append(chk_res)
-            _write_evidence(job_ev_dir / "schema.json", chk_res)
+                chk_res = {
+                    "check_id": f"{job_id}_schema",
+                    "job": job_id,
+                    "check_type": "schema",
+                    "status": chk_status,
+                    "expected": list(expected_cols),
+                    "actual": list(actual_cols) if actual_cols else "Table/Columns verified",
+                    "problems": problems,
+                    "message": f"Schema validation {'passed' if chk_status == 'PASSED' else 'failed with ' + str(len(problems)) + ' issues'}.",
+                    "duration_ms": dur,
+                }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "schema.json", chk_res)
 
         # --- Check 3: Row Count ---
         if "row_count" in requested_checks:
             t_start = time.perf_counter()
-            try:
-                if ora_ok and pg_ok:
-                    src_count = oracle_svc.fetch_row_count(projection_sql, src_table, src_schema)
-                    tgt_count = postgres_svc.fetch_row_count(tgt_schema, tgt_table)
-                else:
-                    # Fallback consistent count
-                    src_count = 100
-                    tgt_count = 100
-
-                diff = abs(src_count - tgt_count)
-                chk_status = "PASSED" if diff == 0 else "FAILED"
-                if chk_status == "FAILED":
-                    job_passed = False
-
-                chk_res = {
-                    "check_id": f"{job_id}_row_count",
-                    "job": job_id,
-                    "check_type": "row_count",
-                    "status": chk_status,
-                    "expected": src_count,
-                    "actual": tgt_count,
-                    "difference": diff,
-                    "message": f"Row count {'matches' if diff == 0 else 'mismatch: source=' + str(src_count) + ' target=' + str(tgt_count)}.",
-                    "duration_ms": int((time.perf_counter() - t_start) * 1000),
-                }
-            except Exception as exc:
-                chk_status = "FAILED"
+            if not (ora_ok and pg_ok):
                 job_passed = False
                 chk_res = {
                     "check_id": f"{job_id}_row_count",
                     "job": job_id,
                     "check_type": "row_count",
                     "status": "FAILED",
-                    "expected": "Row count query execution",
-                    "actual": str(exc),
-                    "message": f"Row count query error: {exc}",
-                    "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    "expected": "Active Oracle and PostgreSQL connections",
+                    "actual": "Database(s) unreachable",
+                    "difference": None,
+                    "message": "Cannot validate row count: Database connection is offline.",
+                    "duration_ms": 0,
                 }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "row_count.json", chk_res)
+            else:
+                try:
+                    src_count = oracle_svc.fetch_row_count(projection_sql, src_table, src_schema)
+                    tgt_count = postgres_svc.fetch_row_count(tgt_schema, tgt_table)
+                    diff = abs(src_count - tgt_count)
+                    chk_status = "PASSED" if diff == 0 else "FAILED"
+                    if chk_status == "FAILED":
+                        job_passed = False
 
-            job_checks.append(chk_res)
-            _write_evidence(job_ev_dir / "row_count.json", chk_res)
+                    chk_res = {
+                        "check_id": f"{job_id}_row_count",
+                        "job": job_id,
+                        "check_type": "row_count",
+                        "status": chk_status,
+                        "expected": src_count,
+                        "actual": tgt_count,
+                        "difference": diff,
+                        "message": f"Row count {'matches' if diff == 0 else 'mismatch: source=' + str(src_count) + ' target=' + str(tgt_count)}.",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                except Exception as exc:
+                    job_passed = False
+                    chk_res = {
+                        "check_id": f"{job_id}_row_count",
+                        "job": job_id,
+                        "check_type": "row_count",
+                        "status": "FAILED",
+                        "expected": "Row count query execution",
+                        "actual": str(exc),
+                        "difference": None,
+                        "message": f"Row count query error: {exc}",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "row_count.json", chk_res)
 
         # --- Check 4: Data Digest / Checksum ---
         if "digest" in requested_checks or "checksum" in requested_checks:
             t_start = time.perf_counter()
-            try:
-                if ora_ok and pg_ok:
-                    src_digest = oracle_svc.compute_data_digest(src_cols, projection_sql, src_table, src_schema)
-                    tgt_digest = postgres_svc.compute_data_digest(tgt_cols, tgt_schema, tgt_table)
-                else:
-                    src_digest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                    tgt_digest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-
-                chk_status = "PASSED" if src_digest == tgt_digest else "FAILED"
-                if chk_status == "FAILED":
-                    job_passed = False
-
-                chk_res = {
-                    "check_id": f"{job_id}_digest",
-                    "job": job_id,
-                    "check_type": "digest",
-                    "status": chk_status,
-                    "expected": src_digest,
-                    "actual": tgt_digest,
-                    "message": f"Data digest {'matches' if chk_status == 'PASSED' else 'mismatch between Oracle source projection and PostgreSQL target'}.",
-                    "duration_ms": int((time.perf_counter() - t_start) * 1000),
-                }
-            except Exception as exc:
-                chk_status = "FAILED"
+            if not (ora_ok and pg_ok):
                 job_passed = False
                 chk_res = {
                     "check_id": f"{job_id}_digest",
                     "job": job_id,
                     "check_type": "digest",
                     "status": "FAILED",
-                    "expected": "SHA-256 digest computation",
-                    "actual": str(exc),
-                    "message": f"Digest calculation error: {exc}",
-                    "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    "expected": "Active Oracle and PostgreSQL connections",
+                    "actual": "Database(s) unreachable",
+                    "message": "Cannot validate data digest: Database connection is offline.",
+                    "duration_ms": 0,
                 }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "digest.json", chk_res)
+            else:
+                try:
+                    src_digest = oracle_svc.compute_data_digest(src_cols, projection_sql, src_table, src_schema)
+                    tgt_digest = postgres_svc.compute_data_digest(tgt_cols, tgt_schema, tgt_table)
 
-            job_checks.append(chk_res)
-            _write_evidence(job_ev_dir / "digest.json", chk_res)
+                    chk_status = "PASSED" if src_digest == tgt_digest else "FAILED"
+                    if chk_status == "FAILED":
+                        job_passed = False
+
+                    chk_res = {
+                        "check_id": f"{job_id}_digest",
+                        "job": job_id,
+                        "check_type": "digest",
+                        "status": chk_status,
+                        "expected": src_digest,
+                        "actual": tgt_digest,
+                        "message": f"Data digest {'matches' if chk_status == 'PASSED' else 'mismatch between Oracle source projection and PostgreSQL target'}.",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                except Exception as exc:
+                    job_passed = False
+                    chk_res = {
+                        "check_id": f"{job_id}_digest",
+                        "job": job_id,
+                        "check_type": "digest",
+                        "status": "FAILED",
+                        "expected": "SHA-256 digest computation",
+                        "actual": str(exc),
+                        "message": f"Digest calculation error: {exc}",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "digest.json", chk_res)
+
+        # --- Check 5: Aggregate Validation ---
+        if "aggregate" in requested_checks:
+            t_start = time.perf_counter()
+            if not (ora_ok and pg_ok):
+                job_passed = False
+                chk_res = {
+                    "check_id": f"{job_id}_aggregate",
+                    "job": job_id,
+                    "check_type": "aggregate",
+                    "status": "FAILED",
+                    "expected": "Active database connection",
+                    "actual": "Database(s) unreachable",
+                    "message": "Cannot validate aggregate: Database connection is offline.",
+                    "duration_ms": 0,
+                }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "aggregate.json", chk_res)
+            else:
+                try:
+                    num_cols = [c for c in src_cols if any(kw in c.lower() for kw in ("amount", "price", "qty", "count", "num", "salary", "balance"))]
+                    target_col = num_cols[0] if num_cols else (src_cols[0] if src_cols else None)
+
+                    if target_col:
+                        expr = f'SUM("{target_col}")'
+                        src_agg = oracle_svc.fetch_aggregate(expr, projection_sql, src_table, src_schema)
+                        tgt_agg = postgres_svc.fetch_aggregate(expr, tgt_schema, tgt_table)
+
+                        diff = abs(src_agg - tgt_agg)
+                        chk_status = "PASSED" if diff == Decimal(0) else "FAILED"
+                        if chk_status == "FAILED":
+                            job_passed = False
+
+                        chk_res = {
+                            "check_id": f"{job_id}_aggregate",
+                            "job": job_id,
+                            "check_type": "aggregate",
+                            "status": chk_status,
+                            "metric": expr,
+                            "expected": str(src_agg),
+                            "actual": str(tgt_agg),
+                            "difference": str(diff),
+                            "message": f"Aggregate {expr} {'matches' if chk_status == 'PASSED' else 'mismatch'}.",
+                            "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                        }
+                        job_checks.append(chk_res)
+                        _write_evidence(job_ev_dir / "aggregate.json", chk_res)
+                except Exception as exc:
+                    job_passed = False
+                    chk_res = {
+                        "check_id": f"{job_id}_aggregate",
+                        "job": job_id,
+                        "check_type": "aggregate",
+                        "status": "FAILED",
+                        "expected": "Aggregate evaluation",
+                        "actual": str(exc),
+                        "message": f"Aggregate check error: {exc}",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                    job_checks.append(chk_res)
+                    _write_evidence(job_ev_dir / "aggregate.json", chk_res)
+
+        # --- Check 6: Null Count Validation ---
+        if "null_check" in requested_checks or "null_count" in requested_checks:
+            t_start = time.perf_counter()
+            if not (ora_ok and pg_ok):
+                job_passed = False
+                chk_res = {
+                    "check_id": f"{job_id}_null_count",
+                    "job": job_id,
+                    "check_type": "null_count",
+                    "status": "FAILED",
+                    "expected": "Active database connection",
+                    "actual": "Database(s) unreachable",
+                    "message": "Cannot validate null count: Database connection is offline.",
+                    "duration_ms": 0,
+                }
+                job_checks.append(chk_res)
+                _write_evidence(job_ev_dir / "null_count.json", chk_res)
+            else:
+                try:
+                    target_col = src_cols[0] if src_cols else None
+                    if target_col:
+                        src_nulls = oracle_svc.fetch_null_count(target_col, projection_sql, src_table, src_schema)
+                        tgt_nulls = postgres_svc.fetch_null_count(target_col, tgt_schema, tgt_table)
+
+                        diff = abs(src_nulls - tgt_nulls)
+                        chk_status = "PASSED" if diff == 0 else "FAILED"
+                        if chk_status == "FAILED":
+                            job_passed = False
+
+                        chk_res = {
+                            "check_id": f"{job_id}_null_count",
+                            "job": job_id,
+                            "check_type": "null_count",
+                            "status": chk_status,
+                            "column": target_col,
+                            "expected": src_nulls,
+                            "actual": tgt_nulls,
+                            "difference": diff,
+                            "message": f"Null count for '{target_col}' {'matches' if chk_status == 'PASSED' else 'mismatch'}.",
+                            "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                        }
+                        job_checks.append(chk_res)
+                        _write_evidence(job_ev_dir / "null_count.json", chk_res)
+                except Exception as exc:
+                    job_passed = False
+                    chk_res = {
+                        "check_id": f"{job_id}_null_count",
+                        "job": job_id,
+                        "check_type": "null_count",
+                        "status": "FAILED",
+                        "expected": "Null count evaluation",
+                        "actual": str(exc),
+                        "message": f"Null check error: {exc}",
+                        "duration_ms": int((time.perf_counter() - t_start) * 1000),
+                    }
+                    job_checks.append(chk_res)
+                    _write_evidence(job_ev_dir / "null_count.json", chk_res)
 
         if not job_passed:
             overall_passed = False
@@ -316,7 +467,7 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
         all_check_results.extend(job_checks)
 
     # Final overall status
-    final_status = "PASSED" if (overall_passed and ora_ok and pg_ok) or (overall_passed) else "FAILED"
+    final_status = "PASSED" if (overall_passed and ora_ok and pg_ok) else "FAILED"
     stage_state = "DVT_PASSED" if final_status == "PASSED" else "DVT_FAILED"
 
     save_pipeline_state(run_id, {"dvt": stage_state})
@@ -327,7 +478,11 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
         "status": "SUCCESS" if final_status == "PASSED" else "FAILED",
         "overall": final_status,
         "can_execute_dvt": True,
-        "message": f"DVT validation {'passed cleanly' if final_status == 'PASSED' else 'failed'}. Source and target satisfy the validation contract.",
+        "message": (
+            "DVT validation passed cleanly. Source and target satisfy the validation contract."
+            if final_status == "PASSED"
+            else f"DVT validation failed. Discrepancies detected between source and target tables in {len([c for c in all_check_results if c['status'] == 'FAILED'])} check(s)."
+        ),
         "summary": {
             "total_checks": len(all_check_results),
             "passed": len([c for c in all_check_results if c["status"] == "PASSED"]),

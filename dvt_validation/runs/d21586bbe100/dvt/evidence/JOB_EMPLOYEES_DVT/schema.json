@@ -1,0 +1,30 @@
+{
+  "check_id": "JOB_EMPLOYEES_DVT_schema",
+  "job": "JOB_EMPLOYEES_DVT",
+  "check_type": "schema",
+  "status": "FAILED",
+  "expected": [
+    "salary",
+    "first_name",
+    "emp_id"
+  ],
+  "actual": [
+    "salary",
+    "first_name",
+    "employee_id"
+  ],
+  "problems": [
+    {
+      "type": "MISSING_COLUMN",
+      "expected": "emp_id",
+      "actual": "Column missing in PostgreSQL target table"
+    },
+    {
+      "type": "EXTRA_COLUMN",
+      "expected": null,
+      "actual": "Column 'employee_id' exists in PostgreSQL target but not in contract"
+    }
+  ],
+  "message": "Schema validation failed with 2 issues.",
+  "duration_ms": 110
+}

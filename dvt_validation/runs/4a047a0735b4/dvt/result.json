@@ -1,0 +1,86 @@
+{
+  "run_id": "4a047a0735b4",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Discrepancies detected between source and target tables in 2 check(s).",
+  "summary": {
+    "total_checks": 4,
+    "passed": 2,
+    "failed": 2
+  },
+  "tables": {
+    "JOB_EMPLOYEES_DVT": {
+      "job_id": "JOB_EMPLOYEES_DVT",
+      "source": "public.EMPLOYEES",
+      "target": "public.employees",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_schema",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "schema",
+          "status": "FAILED",
+          "expected": [
+            "first_name",
+            "emp_id",
+            "salary"
+          ],
+          "actual": [
+            "first_name",
+            "employee_id",
+            "salary"
+          ],
+          "problems": [
+            {
+              "type": "MISSING_COLUMN",
+              "expected": "emp_id",
+              "actual": "Column missing in PostgreSQL target table"
+            },
+            {
+              "type": "EXTRA_COLUMN",
+              "expected": null,
+              "actual": "Column 'employee_id' exists in PostgreSQL target but not in contract"
+            }
+          ],
+          "message": "Schema validation failed with 2 issues.",
+          "duration_ms": 90
+        },
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_row_count",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "row_count",
+          "status": "FAILED",
+          "expected": "Row count query execution",
+          "actual": "Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+          "difference": null,
+          "message": "Row count query error: Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+          "duration_ms": 91
+        }
+      ]
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 279
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 85
+    }
+  ]
+}
