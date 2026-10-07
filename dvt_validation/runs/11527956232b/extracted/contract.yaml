@@ -1,0 +1,12 @@
+
+version: "1.0"
+engine:
+  name: duckdb
+jobs:
+  - id: JOB_TEST_GATE
+    source:
+      table: CUSTOMER
+      columns: [ID, NAME]
+    target:
+      table: customer
+      columns: [id, name]

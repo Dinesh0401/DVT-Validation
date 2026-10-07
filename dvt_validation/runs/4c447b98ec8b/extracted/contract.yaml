@@ -1,0 +1,12 @@
+
+version: "1.0"
+engine:
+  name: duckdb
+jobs:
+  - id: JOB_INV
+    source:
+      table: INVENTORY
+      columns: [SKU, QTY]
+    target:
+      table: tbl_inventory_v2
+      columns: [sku, qty]

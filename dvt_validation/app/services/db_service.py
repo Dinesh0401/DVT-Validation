@@ -138,6 +138,80 @@ class OracleService(BaseDbService):
             hasher.update(row_text.encode("utf-8"))
         return hasher.hexdigest()
 
+    def fetch_rows_as_dicts(
+        self,
+        projection_sql: str | None,
+        table_name: str | None,
+        schema_name: str | None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch real records as dictionaries from Oracle for discrepancy analysis."""
+        adapted_sql = self._adapt_oracle_sql(projection_sql)
+        if adapted_sql:
+            sql = f"SELECT * FROM ({adapted_sql}) WHERE ROWNUM <= {limit}"
+        elif schema_name and table_name:
+            sql = f'SELECT * FROM "{schema_name.upper()}"."{table_name.upper()}" WHERE ROWNUM <= {limit}'
+        elif table_name:
+            sql = f'SELECT * FROM "{table_name.upper()}" WHERE ROWNUM <= {limit}'
+        else:
+            return []
+
+        try:
+            import oracledb
+            dsn = f"{self.host}:{self.port}/{self.service_name}"
+            conn = oracledb.connect(user=self.user, password=self.password, dsn=dsn)
+            with conn:
+                cur = conn.cursor()
+                cur.execute(sql)
+                col_names = [d[0].lower() for d in cur.description] if cur.description else []
+                rows = cur.fetchall()
+                results: list[dict[str, Any]] = []
+                for r in rows:
+                    row_dict: dict[str, Any] = {}
+                    for col_name, val in zip(col_names, r):
+                        if val is None:
+                            row_dict[col_name] = None
+                        elif isinstance(val, (int, float, bool)):
+                            row_dict[col_name] = val
+                        else:
+                            row_dict[col_name] = str(val)
+                    results.append(row_dict)
+                return results
+        except Exception:
+            return []
+
+    def fetch_column_metadata(self, schema_name: str | None, table_name: str) -> list[dict[str, Any]]:
+        """Fetch column names, types, sizes, and nullability from Oracle data dictionary."""
+        owner = schema_name.upper() if schema_name else self.user.upper()
+        sql = """
+        SELECT column_name, data_type, data_length, data_precision, data_scale, nullable
+        FROM all_tab_columns
+        WHERE owner = :owner AND table_name = :tbl
+        ORDER BY column_id
+        """
+        try:
+            import oracledb
+            dsn = f"{self.host}:{self.port}/{self.service_name}"
+            conn = oracledb.connect(user=self.user, password=self.password, dsn=dsn)
+            with conn:
+                cur = conn.cursor()
+                cur.execute(sql, [owner, table_name.upper()])
+                rows = cur.fetchall()
+                cols: list[dict[str, Any]] = []
+                for r in rows:
+                    cols.append({
+                        "name": str(r[0]).lower(),
+                        "raw_name": str(r[0]),
+                        "type": str(r[1]).upper(),
+                        "length": r[2],
+                        "precision": r[3],
+                        "scale": r[4],
+                        "nullable": True if str(r[5]).upper() == "Y" else False,
+                    })
+                return cols
+        except Exception:
+            return []
+
     # ---- Internal Execution Helpers ----
     def _execute_scalar(self, sql: str) -> Any:
         try:
@@ -271,6 +345,96 @@ class PostgresService(BaseDbService):
                 "nullable": r[2].upper() == "YES",
             }
         return {"table_exists": True, "columns": cols}
+
+    def fetch_primary_key(self, schema_name: str | None, table_name: str) -> str | None:
+        """Query PostgreSQL catalog to detect Primary Key column name."""
+        schema = schema_name or "public"
+        sql = """
+        SELECT kcu.column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        WHERE tc.constraint_type = 'PRIMARY KEY'
+          AND tc.table_schema = %s
+          AND tc.table_name = %s
+        ORDER BY kcu.ordinal_position
+        LIMIT 1;
+        """
+        try:
+            rows = self._execute_params(sql, (schema.lower(), table_name.lower()))
+            if rows and rows[0]:
+                return str(rows[0][0]).lower()
+        except Exception:
+            pass
+        return None
+
+    def fetch_rows_as_dicts(
+        self,
+        schema_name: str | None,
+        table_name: str,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch real records as dictionaries from PostgreSQL for discrepancy analysis."""
+        schema = schema_name or "public"
+        sql = f'SELECT * FROM "{schema}"."{table_name}" LIMIT {limit}'
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                user=self.user, password=self.password, host=self.host, port=self.port, dbname=self.database
+            )
+            with conn:
+                cur = conn.cursor()
+                cur.execute(sql)
+                col_names = [d[0].lower() for d in cur.description] if cur.description else []
+                rows = cur.fetchall()
+                results: list[dict[str, Any]] = []
+                for r in rows:
+                    row_dict: dict[str, Any] = {}
+                    for col_name, val in zip(col_names, r):
+                        if val is None:
+                            row_dict[col_name] = None
+                        elif isinstance(val, (int, float, bool)):
+                            row_dict[col_name] = val
+                        else:
+                            row_dict[col_name] = str(val)
+                    results.append(row_dict)
+                return results
+        except Exception:
+            return []
+
+    def fetch_column_metadata(self, schema_name: str | None, table_name: str) -> list[dict[str, Any]]:
+        """Fetch column names, types, sizes, and nullability from PostgreSQL information schema."""
+        schema = schema_name or "public"
+        sql = """
+        SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                user=self.user, password=self.password, host=self.host, port=self.port, dbname=self.database
+            )
+            with conn:
+                cur = conn.cursor()
+                cur.execute(sql, (schema.lower(), table_name.lower()))
+                rows = cur.fetchall()
+                cols: list[dict[str, Any]] = []
+                for r in rows:
+                    cols.append({
+                        "name": str(r[0]).lower(),
+                        "raw_name": str(r[0]),
+                        "type": str(r[1]).lower(),
+                        "length": r[2],
+                        "precision": r[3],
+                        "scale": r[4],
+                        "nullable": True if str(r[5]).upper() == "YES" else False,
+                    })
+                return cols
+        except Exception:
+            return []
 
     # ---- Internal Execution Helpers ----
     def _execute_scalar(self, sql: str) -> Any:

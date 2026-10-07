@@ -1,0 +1,95 @@
+{
+  "run_id": "cc0af23659b8",
+  "status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 6,
+    "passed": 0,
+    "failed": 3,
+    "warnings": 3
+  },
+  "problems": [
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "SNAPSHOT_NOT_BOUND",
+      "severity": "WARNING",
+      "message": "Job 'JOB_SCN' does not bind the snapshot variable despite snapshot acquisition mode.",
+      "job": "JOB_SCN",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_SCN.env.snapshot",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'AMOUNT' is missing from SeaTunnel source projection.",
+      "job": "JOB_SCN",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_SCN.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "AMOUNT",
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'TX_ID' is missing from SeaTunnel source projection.",
+      "job": "JOB_SCN",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_SCN.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "TX_ID",
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "MISSING_SCN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract requires snapshot (SCN) but SeaTunnel source query does not contain 'AS OF SCN'.",
+      "job": "JOB_SCN",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_SCN.snapshot",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "AS OF SCN binding",
+      "actual": "not found",
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

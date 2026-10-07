@@ -1,0 +1,10 @@
+{
+  "run_id": "2d30fe444bad",
+  "preflight": "READY",
+  "migration": "NOT_STARTED",
+  "dvt": "NOT_STARTED",
+  "overall_status": "NOT_STARTED",
+  "can_execute_dvt": false,
+  "updated_at": "2026-10-07T15:57:17.524067+00:00",
+  "preflight_message": "Preflight validation successful. YAML and SeaTunnel configuration are consistent."
+}

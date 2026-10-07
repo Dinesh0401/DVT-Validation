@@ -1,0 +1,24 @@
+{
+  "run_id": "cc0af23659b8",
+  "version": "1.0",
+  "generated_at": "2026-10-07T16:08:02.577388+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_SCN",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.TRANSACTIONS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.transactions"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

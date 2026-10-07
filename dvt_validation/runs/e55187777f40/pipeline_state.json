@@ -1,0 +1,10 @@
+{
+  "run_id": "e55187777f40",
+  "preflight": "REVIEW",
+  "migration": "NOT_STARTED",
+  "dvt": "NOT_STARTED",
+  "overall_status": "NOT_STARTED",
+  "can_execute_dvt": false,
+  "updated_at": "2026-10-07T15:58:38.506634+00:00",
+  "preflight_message": "Preflight validation completed with warnings requiring review before migration."
+}

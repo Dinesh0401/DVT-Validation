@@ -28,6 +28,107 @@ from app.config.settings import RUNS_DIR
 from app.models.preflight_models import JobEntity
 from app.services.db_service import OracleService, PostgresService
 from app.services.pipeline_state_service import get_pipeline_state, save_pipeline_state
+from app.services.remediation_service import build_remediation_bundle
+
+
+def are_values_equal(s_val: Any, t_val: Any) -> bool:
+    """Compare two database column values with numeric and type normalization."""
+    if s_val is None and t_val is None:
+        return True
+    if s_val is None or t_val is None:
+        return False
+    # Check numeric equality first (handles Decimal("5000.00") == 5000.0 or 1 == 1)
+    try:
+        d1 = Decimal(str(s_val).strip())
+        d2 = Decimal(str(t_val).strip())
+        return d1 == d2
+    except Exception:
+        pass
+    # String equality fallback
+    return str(s_val).strip() == str(t_val).strip()
+
+
+def inspect_data_discrepancies(
+    oracle_svc: OracleService,
+    postgres_svc: PostgresService,
+    projection_sql: str | None,
+    src_table: str | None,
+    src_schema: str | None,
+    tgt_table: str,
+    tgt_schema: str | None,
+    tgt_cols: list[str],
+) -> dict[str, Any]:
+    """
+    Dynamically identify the actual missing, extra, or mismatched rows
+    between Oracle Source and PostgreSQL Target without any hardcoding.
+    """
+    # 1. Detect Key Column dynamically
+    pk_col = postgres_svc.fetch_primary_key(tgt_schema, tgt_table)
+    if not pk_col:
+        id_cols = [c.lower() for c in tgt_cols if "id" in c.lower()]
+        if id_cols:
+            pk_col = id_cols[0]
+        else:
+            code_cols = [c.lower() for c in tgt_cols if any(k in c.lower() for k in ("code", "key", "num", "no"))]
+            pk_col = code_cols[0] if code_cols else (tgt_cols[0].lower() if tgt_cols else None)
+
+    # 2. Fetch live rows from both databases
+    ora_records = oracle_svc.fetch_rows_as_dicts(projection_sql, src_table, src_schema, limit=100)
+    pg_records = postgres_svc.fetch_rows_as_dicts(tgt_schema, tgt_table, limit=100)
+
+    # Helper to construct row key
+    def get_row_key(r: dict[str, Any]) -> str:
+        if pk_col and pk_col in r and r.get(pk_col) is not None:
+            return str(r.get(pk_col)).strip()
+        return "|".join(str(v).strip() for _, v in sorted(r.items()))
+
+    # 3. Index by key column
+    src_by_key = {get_row_key(r): r for r in ora_records}
+    tgt_by_key = {get_row_key(r): r for r in pg_records}
+
+    extra_in_tgt_keys = [k for k in tgt_by_key if k not in src_by_key]
+    missing_in_tgt_keys = [k for k in src_by_key if k not in tgt_by_key]
+    common_keys = [k for k in tgt_by_key if k in src_by_key]
+
+    extra_records = [tgt_by_key[k] for k in extra_in_tgt_keys]
+    missing_records = [src_by_key[k] for k in missing_in_tgt_keys]
+
+    # 4. Compare column values for common keys
+    value_mismatches = []
+    for k in common_keys:
+        s_row = src_by_key[k]
+        t_row = tgt_by_key[k]
+        for col in tgt_cols:
+            c_low = col.lower()
+            s_val = s_row.get(c_low)
+            t_val = t_row.get(c_low)
+            if not are_values_equal(s_val, t_val):
+                value_mismatches.append({
+                    "key": {pk_col or "row_id": k},
+                    "column": c_low,
+                    "source_value": s_val,
+                    "target_value": t_val,
+                })
+
+    summary_parts = []
+    if extra_in_tgt_keys:
+        summary_parts.append(f"Target (PostgreSQL) has {len(extra_in_tgt_keys)} extra record(s) not found in Source (Oracle) [Keys: {', '.join(extra_in_tgt_keys[:5])}].")
+    if missing_in_tgt_keys:
+        summary_parts.append(f"Target (PostgreSQL) is missing {len(missing_in_tgt_keys)} record(s) present in Source (Oracle) [Keys: {', '.join(missing_in_tgt_keys[:5])}].")
+    if value_mismatches:
+        summary_parts.append(f"Detected {len(value_mismatches)} column value discrepancy/discrepancies across shared records.")
+    if not summary_parts:
+        summary_parts.append("All sampled records and columns match.")
+
+    return {
+        "key_column": pk_col or "N/A",
+        "summary": " ".join(summary_parts),
+        "extra_in_target_count": len(extra_in_tgt_keys),
+        "missing_in_target_count": len(missing_in_tgt_keys),
+        "extra_in_target_records": extra_records[:20],
+        "missing_in_target_records": missing_records[:20],
+        "sample_value_mismatches": value_mismatches[:20],
+    }
 
 
 def execute_dvt_validation(run_id: str) -> dict[str, Any]:
@@ -153,6 +254,7 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
 
         job_checks: list[dict[str, Any]] = []
         job_passed = True
+        job_discrepancies: dict[str, Any] | None = None
 
         src_schema = src.get("schema")
         src_table = src.get("table")
@@ -256,6 +358,17 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
                     chk_status = "PASSED" if diff == 0 else "FAILED"
                     if chk_status == "FAILED":
                         job_passed = False
+                        job_discrepancies = inspect_data_discrepancies(
+                            oracle_svc=oracle_svc,
+                            postgres_svc=postgres_svc,
+                            projection_sql=projection_sql,
+                            src_table=src_table,
+                            src_schema=src_schema,
+                            tgt_table=tgt_table,
+                            tgt_schema=tgt_schema,
+                            tgt_cols=tgt_cols,
+                        )
+                        _write_evidence(job_ev_dir / "discrepancies.json", job_discrepancies)
 
                     chk_res = {
                         "check_id": f"{job_id}_row_count",
@@ -268,6 +381,8 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
                         "message": f"Row count {'matches' if diff == 0 else 'mismatch: source=' + str(src_count) + ' target=' + str(tgt_count)}.",
                         "duration_ms": int((time.perf_counter() - t_start) * 1000),
                     }
+                    if job_discrepancies:
+                        chk_res["discrepancy_details"] = job_discrepancies
                 except Exception as exc:
                     job_passed = False
                     chk_res = {
@@ -309,6 +424,18 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
                     chk_status = "PASSED" if src_digest == tgt_digest else "FAILED"
                     if chk_status == "FAILED":
                         job_passed = False
+                        if not job_discrepancies:
+                            job_discrepancies = inspect_data_discrepancies(
+                                oracle_svc=oracle_svc,
+                                postgres_svc=postgres_svc,
+                                projection_sql=projection_sql,
+                                src_table=src_table,
+                                src_schema=src_schema,
+                                tgt_table=tgt_table,
+                                tgt_schema=tgt_schema,
+                                tgt_cols=tgt_cols,
+                            )
+                            _write_evidence(job_ev_dir / "discrepancies.json", job_discrepancies)
 
                     chk_res = {
                         "check_id": f"{job_id}_digest",
@@ -320,6 +447,8 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
                         "message": f"Data digest {'matches' if chk_status == 'PASSED' else 'mismatch between Oracle source projection and PostgreSQL target'}.",
                         "duration_ms": int((time.perf_counter() - t_start) * 1000),
                     }
+                    if job_discrepancies:
+                        chk_res["discrepancy_details"] = job_discrepancies
                 except Exception as exc:
                     job_passed = False
                     chk_res = {
@@ -457,13 +586,69 @@ def execute_dvt_validation(run_id: str) -> dict[str, Any]:
         if not job_passed:
             overall_passed = False
 
-        job_results[job_id] = {
+        # Build remediation bundle (correct SQL query, schema DDL, SeaTunnel transform block)
+        job_problems = []
+        for chk in job_checks:
+            if chk.get("problems"):
+                job_problems.extend(chk["problems"])
+
+        remediation_bundle = build_remediation_bundle(
+            oracle_svc=oracle_svc,
+            postgres_svc=postgres_svc,
+            src_schema=src_schema,
+            src_table=src_table,
+            tgt_schema=tgt_schema,
+            tgt_table=tgt_table,
+            tgt_cols=tgt_cols,
+            job_id=job_id,
+            problems=job_problems,
+            discrepancy_details=job_discrepancies,
+        )
+        _write_evidence(job_ev_dir / "remediation.json", remediation_bundle)
+
+        sql_script_lines = [
+            f"-- Remediation Script for {job_id} ({tgt_schema}.{tgt_table})",
+            f"-- Generated: {datetime.now(timezone.utc).isoformat()}",
+            "",
+            "-- 1. Correct Target PostgreSQL Schema (DDL):",
+            remediation_bundle.get("correct_target_schema_ddl", ""),
+            "",
+        ]
+        if remediation_bundle.get("alter_table_ddl"):
+            sql_script_lines.append("-- 2. Missing Columns Alter Statements:")
+            sql_script_lines.extend(remediation_bundle["alter_table_ddl"])
+            sql_script_lines.append("")
+
+        sql_script_lines.extend([
+            "-- 3. Correct Source-to-Target Transformation Query:",
+            remediation_bundle.get("correct_transform_query", "") + ";",
+            "",
+        ])
+        if remediation_bundle.get("data_sync_dml", {}).get("insert_missing_sql"):
+            sql_script_lines.extend([
+                "-- 4. Data Reconciliation (Insert Missing Records):",
+                remediation_bundle["data_sync_dml"]["insert_missing_sql"],
+                "",
+            ])
+        if remediation_bundle.get("data_sync_dml", {}).get("delete_extra_sql"):
+            sql_script_lines.extend([
+                "-- 5. Data Reconciliation (Delete Extra Target Records):",
+                remediation_bundle["data_sync_dml"]["delete_extra_sql"],
+                "",
+            ])
+        (job_ev_dir / "remediation.sql").write_text("\n".join(sql_script_lines), encoding="utf-8")
+
+        job_entry = {
             "job_id": job_id,
             "source": f"{src_schema}.{src_table}",
             "target": f"{tgt_schema}.{tgt_table}",
             "status": "PASSED" if job_passed else "FAILED",
             "checks": job_checks,
+            "remediation": remediation_bundle,
         }
+        if job_discrepancies:
+            job_entry["discrepancy_details"] = job_discrepancies
+        job_results[job_id] = job_entry
         all_check_results.extend(job_checks)
 
     # Final overall status
@@ -540,6 +725,98 @@ def _generate_dvt_markdown_report(result: dict[str, Any], report_path: Path):
                 lines.append(f"  - Difference: `{chk['difference']}`")
             if chk.get("expected") is not None and chk.get("actual") is not None:
                 lines.append(f"  - Expected: `{chk['expected']}` | Actual: `{chk['actual']}`")
+            if chk.get("problems"):
+                for p in chk["problems"]:
+                    lines.append(f"  - Problem: `{p.get('type')}` - {p.get('actual')}")
+
+        disc = jdata.get("discrepancy_details")
+        if disc:
+            lines.append("")
+            lines.append("#### Data Discrepancy Breakdown (Exact Differing Records):")
+            lines.append(f"**Analysis Summary:** {disc.get('summary', 'Discrepancy detected.')}")
+            lines.append(f"- **Key Column:** `{disc.get('key_column', 'N/A')}`")
+            lines.append(f"- **Extra Records in Target:** {disc.get('extra_in_target_count', len(disc.get('extra_in_target_records', [])))}")
+            lines.append(f"- **Missing Records in Target:** {disc.get('missing_in_target_count', len(disc.get('missing_in_target_records', [])))}")
+
+            extra_recs = disc.get("extra_in_target_records", [])
+            if extra_recs:
+                lines.append("")
+                lines.append("##### Extra Records in Target (PostgreSQL):")
+                cols = list(extra_recs[0].keys())
+                lines.append("| " + " | ".join(cols) + " |")
+                lines.append("| " + " | ".join(["---"] * len(cols)) + " |")
+                for r in extra_recs[:10]:
+                    lines.append("| " + " | ".join(str(r.get(c, "")) for c in cols) + " |")
+
+            missing_recs = disc.get("missing_in_target_records", [])
+            if missing_recs:
+                lines.append("")
+                lines.append("##### Missing Records in Target (Exist only in Oracle Source):")
+                cols = list(missing_recs[0].keys())
+                lines.append("| " + " | ".join(cols) + " |")
+                lines.append("| " + " | ".join(["---"] * len(cols)) + " |")
+                for r in missing_recs[:10]:
+                    lines.append("| " + " | ".join(str(r.get(c, "")) for c in cols) + " |")
+
+            mismatches = disc.get("sample_value_mismatches", [])
+            if mismatches:
+                lines.append("")
+                lines.append("##### Column Value Mismatches on Matched Keys:")
+                lines.append("| Key | Column | Source Value (Oracle) | Target Value (PostgreSQL) |")
+                lines.append("| :--- | :--- | :--- | :--- |")
+                for m in mismatches[:10]:
+                    key_val = ", ".join(f"{k}={v}" for k, v in m.get("key", {}).items())
+                    lines.append(f"| {key_val} | `{m.get('column')}` | `{m.get('source_value')}` | `{m.get('target_value')}` |")
+
+        rem = jdata.get("remediation")
+        if rem:
+            lines.append("")
+            lines.append("#### Recommended Remediation (Schema DDL & SQL Query):")
+            lines.append(f"*{rem.get('summary', 'Remediation plan to fix differences.')}*")
+            lines.append("")
+            lines.append("##### 1. Correct Target PostgreSQL Schema (DDL):")
+            lines.append("```sql")
+            lines.append(rem.get("correct_target_schema_ddl", ""))
+            lines.append("```")
+            lines.append("")
+
+            if rem.get("alter_table_ddl"):
+                lines.append("##### 2. Missing Columns Alter Statements:")
+                lines.append("```sql")
+                lines.append("\n".join(rem["alter_table_ddl"]))
+                lines.append("```")
+                lines.append("")
+
+            lines.append("##### 3. Correct Source-to-Target Transformation SQL Query:")
+            lines.append("```sql")
+            lines.append(rem.get("correct_transform_query", ""))
+            lines.append("```")
+            lines.append("")
+
+            lines.append("##### 4. SeaTunnel Transformer Configuration Block:")
+            lines.append("```hocon")
+            lines.append(rem.get("seatunnel_transform_block", ""))
+            lines.append("```")
+            lines.append("")
+
+            dml = rem.get("data_sync_dml", {})
+            if dml.get("insert_missing_sql") or dml.get("delete_extra_sql"):
+                lines.append("##### 5. Data Reconciliation (DML Sync):")
+                lines.append("```sql")
+                if dml.get("insert_missing_sql"):
+                    lines.append(dml["insert_missing_sql"])
+                if dml.get("delete_extra_sql"):
+                    lines.append(dml["delete_extra_sql"])
+                lines.append("```")
+                lines.append("")
+
+            instructions = rem.get("instructions_for_teammate", [])
+            if instructions:
+                lines.append("##### Implementation Instructions for Transformer Pipeline:")
+                for ins in instructions:
+                    lines.append(f"- {ins}")
+                lines.append("")
+
         lines.append("")
 
     report_path.write_text("\n".join(lines), encoding="utf-8")

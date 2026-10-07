@@ -1,0 +1,24 @@
+{
+  "run_id": "b9cb5ca917c5",
+  "version": "1.0",
+  "generated_at": "2026-10-07T16:08:00.942198+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_EMPLOYEES_DVT",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.EMPLOYEES"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.employees"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

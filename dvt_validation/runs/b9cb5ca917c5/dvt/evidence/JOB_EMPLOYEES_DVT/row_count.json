@@ -1,0 +1,11 @@
+{
+  "check_id": "JOB_EMPLOYEES_DVT_row_count",
+  "job": "JOB_EMPLOYEES_DVT",
+  "check_type": "row_count",
+  "status": "FAILED",
+  "expected": "Row count query execution",
+  "actual": "Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+  "difference": null,
+  "message": "Row count query error: Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+  "duration_ms": 65
+}

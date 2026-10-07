@@ -1,0 +1,10 @@
+{
+  "run_id": "cc0af23659b8",
+  "preflight": "BLOCKED",
+  "migration": "NOT_STARTED",
+  "dvt": "NOT_STARTED",
+  "overall_status": "PREFLIGHT_BLOCKED",
+  "can_execute_dvt": false,
+  "updated_at": "2026-10-07T16:08:02.579202+00:00",
+  "preflight_message": "Preflight validation failed. Fix the reported mismatches before migration."
+}

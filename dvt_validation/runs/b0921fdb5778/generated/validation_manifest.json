@@ -1,0 +1,53 @@
+{
+  "run_id": "b0921fdb5778",
+  "generated_at": "2026-10-07T15:57:39.076646+00:00",
+  "stage": "preflight",
+  "preflight_status": "READY",
+  "can_execute_seatunnel": true,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB-banking_accounts",
+      "source": {
+        "engine": "oracle",
+        "schema": "banking",
+        "table": "ACCOUNTS",
+        "columns": [
+          "account_id",
+          "customer_id",
+          "account_type",
+          "balance",
+          "open_date",
+          "status",
+          "is_active",
+          "branch_code"
+        ],
+        "projection_sql": "SELECT\n  \"ACCOUNT_ID\" AS \"account_id\",\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  NULLIF(\"ACCOUNT_TYPE\", '') AS \"account_type\",\n  \"BALANCE\" AS \"balance\",\n  \"OPEN_DATE\" AS \"open_date\",\n  NULLIF(\"STATUS\", '') AS \"status\",\n  \"IS_ACTIVE\" AS \"is_active\",\n  NULLIF(\"BRANCH_CODE\", '') AS \"branch_code\"\nFROM \"banking\".\"ACCOUNTS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "accounts",
+        "columns": [
+          "account_id",
+          "customer_id",
+          "account_type",
+          "balance",
+          "open_date",
+          "status",
+          "is_active",
+          "branch_code"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "digest",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

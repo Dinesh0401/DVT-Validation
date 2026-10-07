@@ -1,0 +1,17 @@
+{
+  "job_id": "JOB_EMPLOYEES_DVT",
+  "target_table": "public.employees",
+  "summary": "Remediation recommendations generated to align schema and SQL transformation.",
+  "correct_target_schema_ddl": "CREATE TABLE IF NOT EXISTS \"public\".\"employees\" (\n    \"emp_id\" BIGINT,\n    \"first_name\" VARCHAR(255),\n    \"salary\" NUMERIC(18, 2),\n    CONSTRAINT \"pk_employees\" PRIMARY KEY (\"employee_id\")\n);",
+  "alter_table_ddl": [
+    "ALTER TABLE \"public\".\"employees\" ADD COLUMN IF NOT EXISTS \"emp_id\" BIGINT;"
+  ],
+  "correct_transform_query": "SELECT\n  NULLIF(\"EMP_ID\", '') AS \"emp_id\",\n  NULLIF(\"FIRST_NAME\", '') AS \"first_name\",\n  NULLIF(\"SALARY\", '') AS \"salary\"\nFROM \"PUBLIC\".\"EMPLOYEES\"",
+  "seatunnel_transform_block": "transform {\n  Sql {\n    source_table_name = \"src_employees\"\n    result_table_name = \"sink_employees\"\n    query = \"SELECT NULLIF(\"EMP_ID\", '') AS \"emp_id\", NULLIF(\"FIRST_NAME\", '') AS \"first_name\", NULLIF(\"SALARY\", '') AS \"salary\" FROM src_employees\"\n  }\n}",
+  "data_sync_dml": {},
+  "instructions_for_teammate": [
+    "1. To fix target schema: Run 'correct_target_schema_ddl' in PostgreSQL (or execute 'alter_table_ddl' if only missing columns).",
+    "2. To fix data transformation: Update the transformer Python file or SeaTunnel config with 'correct_transform_query'.",
+    "3. In SeaTunnel Zeta configuration: Place 'seatunnel_transform_block' inside the job configuration."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "run_id": "5c94c129adbf",
+  "version": "1.0",
+  "generated_at": "2026-10-07T15:58:39.780150+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_INV",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.INVENTORY"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.tbl_inventory_v2"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}
