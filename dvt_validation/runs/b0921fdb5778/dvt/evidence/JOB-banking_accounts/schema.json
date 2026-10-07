@@ -4,26 +4,26 @@
   "check_type": "schema",
   "status": "PASSED",
   "expected": [
+    "is_active",
+    "account_type",
     "account_id",
+    "open_date",
     "branch_code",
     "customer_id",
-    "balance",
-    "account_type",
     "status",
-    "open_date",
-    "is_active"
+    "balance"
   ],
   "actual": [
+    "is_active",
+    "account_type",
     "account_id",
+    "open_date",
     "branch_code",
     "customer_id",
-    "balance",
-    "account_type",
     "status",
-    "open_date",
-    "is_active"
+    "balance"
   ],
   "problems": [],
   "message": "Schema validation passed.",
-  "duration_ms": 67
+  "duration_ms": 65
 }

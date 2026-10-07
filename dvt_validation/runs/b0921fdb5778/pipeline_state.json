@@ -2,9 +2,9 @@
   "run_id": "b0921fdb5778",
   "preflight": "READY",
   "migration": "SUCCESS",
-  "dvt": "DVT_FAILED",
-  "overall_status": "FAILED",
+  "dvt": "DVT_RUNNING",
+  "overall_status": "DVT_RUNNING",
   "can_execute_dvt": true,
-  "updated_at": "2026-10-07T15:58:16.264634+00:00",
+  "updated_at": "2026-10-07T16:09:21.502318+00:00",
   "preflight_message": "Preflight validation successful. YAML and SeaTunnel configuration are consistent."
 }

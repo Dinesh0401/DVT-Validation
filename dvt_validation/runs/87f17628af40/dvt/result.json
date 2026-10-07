@@ -1,0 +1,103 @@
+{
+  "run_id": "87f17628af40",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Discrepancies detected between source and target tables in 2 check(s).",
+  "summary": {
+    "total_checks": 4,
+    "passed": 2,
+    "failed": 2
+  },
+  "tables": {
+    "JOB_EMPLOYEES_DVT": {
+      "job_id": "JOB_EMPLOYEES_DVT",
+      "source": "public.EMPLOYEES",
+      "target": "public.employees",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_schema",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "schema",
+          "status": "FAILED",
+          "expected": [
+            "emp_id",
+            "first_name",
+            "salary"
+          ],
+          "actual": [
+            "first_name",
+            "employee_id",
+            "salary"
+          ],
+          "problems": [
+            {
+              "type": "MISSING_COLUMN",
+              "expected": "emp_id",
+              "actual": "Column missing in PostgreSQL target table"
+            },
+            {
+              "type": "EXTRA_COLUMN",
+              "expected": null,
+              "actual": "Column 'employee_id' exists in PostgreSQL target but not in contract"
+            }
+          ],
+          "message": "Schema validation failed with 2 issues.",
+          "duration_ms": 78
+        },
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_row_count",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "row_count",
+          "status": "FAILED",
+          "expected": "Row count query execution",
+          "actual": "Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+          "difference": null,
+          "message": "Row count query error: Oracle query error: ORA-00942: table or view \"PUBLIC\".\"EMPLOYEES\" does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+          "duration_ms": 76
+        }
+      ],
+      "remediation": {
+        "job_id": "JOB_EMPLOYEES_DVT",
+        "target_table": "public.employees",
+        "summary": "Remediation recommendations generated to align schema and SQL transformation.",
+        "correct_target_schema_ddl": "CREATE TABLE IF NOT EXISTS \"public\".\"employees\" (\n    \"emp_id\" BIGINT,\n    \"first_name\" VARCHAR(255),\n    \"salary\" NUMERIC(18, 2),\n    CONSTRAINT \"pk_employees\" PRIMARY KEY (\"employee_id\")\n);",
+        "alter_table_ddl": [
+          "ALTER TABLE \"public\".\"employees\" ADD COLUMN IF NOT EXISTS \"emp_id\" BIGINT;"
+        ],
+        "correct_transform_query": "SELECT\n  NULLIF(\"EMP_ID\", '') AS \"emp_id\",\n  NULLIF(\"FIRST_NAME\", '') AS \"first_name\",\n  NULLIF(\"SALARY\", '') AS \"salary\"\nFROM \"PUBLIC\".\"EMPLOYEES\"",
+        "seatunnel_transform_block": "transform {\n  Sql {\n    source_table_name = \"src_employees\"\n    result_table_name = \"sink_employees\"\n    query = \"SELECT NULLIF(\"EMP_ID\", '') AS \"emp_id\", NULLIF(\"FIRST_NAME\", '') AS \"first_name\", NULLIF(\"SALARY\", '') AS \"salary\" FROM src_employees\"\n  }\n}",
+        "data_sync_dml": {},
+        "instructions_for_teammate": [
+          "1. To fix target schema: Run 'correct_target_schema_ddl' in PostgreSQL (or execute 'alter_table_ddl' if only missing columns).",
+          "2. To fix data transformation: Update the transformer Python file or SeaTunnel config with 'correct_transform_query'.",
+          "3. In SeaTunnel Zeta configuration: Place 'seatunnel_transform_block' inside the job configuration."
+        ]
+      }
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 219
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 87
+    }
+  ]
+}
