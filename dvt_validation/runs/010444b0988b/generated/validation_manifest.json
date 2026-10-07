@@ -1,0 +1,254 @@
+{
+  "run_id": "010444b0988b",
+  "generated_at": "2026-10-06T12:10:36.128707+00:00",
+  "stage": "preflight",
+  "preflight_status": "READY",
+  "can_execute_seatunnel": true,
+  "total_jobs": 6,
+  "jobs": [
+    {
+      "job_id": "JOB-sports_customers",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "CUSTOMERS",
+        "columns": [
+          "customer_id",
+          "first_name",
+          "last_name",
+          "email",
+          "phone",
+          "address",
+          "city",
+          "state",
+          "postal_code",
+          "created_at"
+        ],
+        "projection_sql": "SELECT\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  NULLIF(\"FIRST_NAME\", '') AS \"first_name\",\n  NULLIF(\"LAST_NAME\", '') AS \"last_name\",\n  NULLIF(\"EMAIL\", '') AS \"email\",\n  NULLIF(\"PHONE\", '') AS \"phone\",\n  NULLIF(\"ADDRESS\", '') AS \"address\",\n  NULLIF(\"CITY\", '') AS \"city\",\n  NULLIF(\"STATE\", '') AS \"state\",\n  NULLIF(\"POSTAL_CODE\", '') AS \"postal_code\",\n  \"CREATED_AT\" AS \"created_at\"\nFROM \"SPORTS\".\"CUSTOMERS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "customers",
+        "columns": [
+          "customer_id",
+          "first_name",
+          "last_name",
+          "email",
+          "phone",
+          "address",
+          "city",
+          "state",
+          "postal_code",
+          "created_at"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    },
+    {
+      "job_id": "JOB-sports_inventory",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "INVENTORY",
+        "columns": [
+          "inventory_id",
+          "product_id",
+          "stock_qty",
+          "reorder_level",
+          "updated_at"
+        ],
+        "projection_sql": "SELECT\n  \"INVENTORY_ID\" AS \"inventory_id\",\n  \"PRODUCT_ID\" AS \"product_id\",\n  \"STOCK_QTY\" AS \"stock_qty\",\n  \"REORDER_LEVEL\" AS \"reorder_level\",\n  \"UPDATED_AT\" AS \"updated_at\"\nFROM \"SPORTS\".\"INVENTORY\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "inventory",
+        "columns": [
+          "inventory_id",
+          "product_id",
+          "stock_qty",
+          "reorder_level",
+          "updated_at"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    },
+    {
+      "job_id": "JOB-sports_order_items",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "ORDER_ITEMS",
+        "columns": [
+          "order_item_id",
+          "order_id",
+          "product_id",
+          "quantity",
+          "unit_price",
+          "discount"
+        ],
+        "projection_sql": "SELECT\n  \"ORDER_ITEM_ID\" AS \"order_item_id\",\n  \"ORDER_ID\" AS \"order_id\",\n  \"PRODUCT_ID\" AS \"product_id\",\n  \"QUANTITY\" AS \"quantity\",\n  \"UNIT_PRICE\" AS \"unit_price\",\n  \"DISCOUNT\" AS \"discount\"\nFROM \"SPORTS\".\"ORDER_ITEMS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "order_items",
+        "columns": [
+          "order_item_id",
+          "order_id",
+          "product_id",
+          "quantity",
+          "unit_price",
+          "discount"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    },
+    {
+      "job_id": "JOB-sports_orders",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "ORDERS",
+        "columns": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "total_amount",
+          "status",
+          "shipping_address"
+        ],
+        "projection_sql": "SELECT\n  \"ORDER_ID\" AS \"order_id\",\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  \"ORDER_DATE\" AS \"order_date\",\n  \"TOTAL_AMOUNT\" AS \"total_amount\",\n  NULLIF(\"STATUS\", '') AS \"status\",\n  NULLIF(\"SHIPPING_ADDRESS\", '') AS \"shipping_address\"\nFROM \"SPORTS\".\"ORDERS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "orders",
+        "columns": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "total_amount",
+          "status",
+          "shipping_address"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    },
+    {
+      "job_id": "JOB-sports_payments",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "PAYMENTS",
+        "columns": [
+          "payment_id",
+          "order_id",
+          "payment_date",
+          "amount",
+          "payment_method",
+          "payment_status",
+          "transaction_id"
+        ],
+        "projection_sql": "SELECT\n  \"PAYMENT_ID\" AS \"payment_id\",\n  \"ORDER_ID\" AS \"order_id\",\n  \"PAYMENT_DATE\" AS \"payment_date\",\n  \"AMOUNT\" AS \"amount\",\n  NULLIF(\"PAYMENT_METHOD\", '') AS \"payment_method\",\n  NULLIF(\"PAYMENT_STATUS\", '') AS \"payment_status\",\n  NULLIF(\"TRANSACTION_ID\", '') AS \"transaction_id\"\nFROM \"SPORTS\".\"PAYMENTS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "payments",
+        "columns": [
+          "payment_id",
+          "order_id",
+          "payment_date",
+          "amount",
+          "payment_method",
+          "payment_status",
+          "transaction_id"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    },
+    {
+      "job_id": "JOB-sports_products",
+      "source": {
+        "engine": "oracle",
+        "schema": "SPORTS",
+        "table": "PRODUCTS",
+        "columns": [
+          "product_id",
+          "product_name",
+          "category_id",
+          "brand",
+          "price",
+          "description",
+          "size",
+          "color",
+          "active",
+          "created_at"
+        ],
+        "projection_sql": "SELECT\n  \"PRODUCT_ID\" AS \"product_id\",\n  NULLIF(\"PRODUCT_NAME\", '') AS \"product_name\",\n  \"CATEGORY_ID\" AS \"category_id\",\n  NULLIF(\"BRAND\", '') AS \"brand\",\n  \"PRICE\" AS \"price\",\n  NULLIF(\"DESCRIPTION\", '') AS \"description\",\n  NULLIF(\"SIZE\", '') AS \"size\",\n  NULLIF(\"COLOR\", '') AS \"color\",\n  \"ACTIVE\" AS \"active\",\n  \"CREATED_AT\" AS \"created_at\"\nFROM \"SPORTS\".\"PRODUCTS\" AS \"t0\"",
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "products",
+        "columns": [
+          "product_id",
+          "product_name",
+          "category_id",
+          "brand",
+          "price",
+          "description",
+          "size",
+          "color",
+          "active",
+          "created_at"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column",
+        "snapshot_scn"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

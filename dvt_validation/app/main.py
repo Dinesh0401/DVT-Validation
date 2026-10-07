@@ -9,7 +9,7 @@ package.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.preflight import router as preflight_router
+from app.api.preflight import migration_router, router as preflight_router
 
 app = FastAPI(
     title="DVT Preflight Validator",
@@ -32,6 +32,7 @@ app.add_middleware(
 )
 
 app.include_router(preflight_router)
+app.include_router(migration_router)
 
 
 @app.get("/health")

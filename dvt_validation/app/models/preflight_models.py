@@ -21,6 +21,9 @@ class Severity(str, enum.Enum):
 
 
 class OverallStatus(str, enum.Enum):
+    READY = "READY"
+    BLOCKED = "BLOCKED"
+    REVIEW = "REVIEW"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
 
@@ -60,6 +63,7 @@ class CheckSummary(BaseModel):
 class PreflightResult(BaseModel):
     run_id: str
     status: OverallStatus = OverallStatus.SUCCESS
+    can_execute_seatunnel: bool = True
     stage: str = "preflight"
     summary: CheckSummary = CheckSummary()
     problems: list[Problem] = []

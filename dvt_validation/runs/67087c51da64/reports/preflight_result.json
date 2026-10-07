@@ -1,0 +1,43 @@
+{
+  "run_id": "67087c51da64",
+  "status": "REVIEW",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 2,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 1
+  },
+  "problems": [
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_dept → sink_dept (query: SELECT DEPT_ID AS dept_id, DEPT_NAME AS dept_name, MANAGER_ID AS manager_id FROM src_dept).",
+      "job": "JOB_001",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "job.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation completed with warnings requiring review before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

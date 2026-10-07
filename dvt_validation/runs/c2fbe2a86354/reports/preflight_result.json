@@ -1,0 +1,56 @@
+{
+  "run_id": "c2fbe2a86354",
+  "status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 3,
+    "passed": 1,
+    "failed": 1,
+    "warnings": 1
+  },
+  "problems": [
+    {
+      "type": "SNAPSHOT_NOT_BOUND",
+      "severity": "WARNING",
+      "message": "Job 'JOB_001' does not bind the snapshot variable despite snapshot acquisition mode.",
+      "job": "JOB_001",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_001.env.snapshot",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_SCN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract requires snapshot (SCN) but SeaTunnel source query does not contain 'AS OF SCN'.",
+      "job": "JOB_001",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_001.snapshot",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "AS OF SCN binding",
+      "actual": "not found",
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_dept → sink_dept (query: SELECT DEPT_ID AS dept_id, DEPT_NAME AS dept_name, MANAGER_ID AS manager_id FROM src_dept).",
+      "job": "JOB_001",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "job.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

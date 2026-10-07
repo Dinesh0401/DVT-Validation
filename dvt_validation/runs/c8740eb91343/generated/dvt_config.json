@@ -1,0 +1,24 @@
+{
+  "run_id": "c8740eb91343",
+  "version": "1.0",
+  "generated_at": "2026-10-06T12:01:40.202310+00:00",
+  "validations": [
+    {
+      "job_id": "JOB-banking_accounts",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "BANKING.ACCOUNTS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.accounts"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

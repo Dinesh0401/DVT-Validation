@@ -29,3 +29,18 @@ ALLOWED_EXTENSIONS: set[str] = {".yaml", ".yml", ".conf", ".json", ".md", ".txt"
 # ---------------------------------------------------------------------------
 # Column order comparison is only a WARNING, not an ERROR
 COLUMN_ORDER_SEVERITY: str = os.getenv("COLUMN_ORDER_SEVERITY", "WARNING")
+
+# ---------------------------------------------------------------------------
+# Database Connectivity Settings (Environment variables)
+# ---------------------------------------------------------------------------
+ORACLE_USER: str = os.getenv("ORACLE_USER", "SYSTEM")
+ORACLE_PASSWORD: str = os.getenv("ORACLE_PASSWORD", "root12345")
+ORACLE_HOST: str = os.getenv("ORACLE_HOST", "localhost")
+ORACLE_PORT: str = os.getenv("ORACLE_PORT", "1521")
+ORACLE_SERVICE: str = os.getenv("ORACLE_SERVICE", "FREEPDB1")
+
+POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "root1234")
+POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_DATABASE: str = os.getenv("POSTGRES_DATABASE", "migration_exercise")

@@ -1,0 +1,43 @@
+{
+  "run_id": "140e6bab3600",
+  "generated_at": "2026-10-06T11:23:53.389718+00:00",
+  "stage": "preflight",
+  "preflight_status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB_PAYROLL",
+      "source": {
+        "engine": "oracle",
+        "schema": "public",
+        "table": "SALARIES",
+        "columns": [
+          "EMP_ID",
+          "SALARY",
+          "BONUS",
+          "TAX_DEDUCTION"
+        ],
+        "projection_sql": null,
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "salaries",
+        "columns": [
+          "emp_id",
+          "salary",
+          "bonus",
+          "tax_deduction"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

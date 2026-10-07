@@ -1,0 +1,41 @@
+{
+  "run_id": "afeface60bb7",
+  "generated_at": "2026-10-06T12:13:22.870324+00:00",
+  "stage": "preflight",
+  "preflight_status": "REVIEW",
+  "can_execute_seatunnel": false,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB_001",
+      "source": {
+        "engine": "oracle",
+        "schema": "public",
+        "table": "DEPARTMENTS",
+        "columns": [
+          "DEPT_ID",
+          "DEPT_NAME",
+          "MANAGER_ID"
+        ],
+        "projection_sql": null,
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "departments",
+        "columns": [
+          "dept_id",
+          "dept_name",
+          "manager_id"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

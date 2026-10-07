@@ -1,0 +1,24 @@
+{
+  "run_id": "67087c51da64",
+  "version": "1.0",
+  "generated_at": "2026-10-06T11:41:18.808103+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_001",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.DEPARTMENTS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.departments"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

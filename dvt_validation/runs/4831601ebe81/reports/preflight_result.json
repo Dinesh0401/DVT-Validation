@@ -1,0 +1,82 @@
+{
+  "run_id": "4831601ebe81",
+  "status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 5,
+    "passed": 0,
+    "failed": 2,
+    "warnings": 3
+  },
+  "problems": [
+    {
+      "type": "MISSING_ENGINE",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an engine name.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "engine.name",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'ID' is missing from SeaTunnel source projection.",
+      "job": "JOB_TEST_GATE",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_TEST_GATE.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "ID",
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'NAME' is missing from SeaTunnel source projection.",
+      "job": "JOB_TEST_GATE",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_TEST_GATE.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "NAME",
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

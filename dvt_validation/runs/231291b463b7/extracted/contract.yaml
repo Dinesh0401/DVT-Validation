@@ -1,0 +1,14 @@
+
+version: "1.0"
+engine:
+  name: duckdb
+convention:
+  naming: standard
+jobs:
+  - id: JOB_EMPLOYEES_DVT
+    source:
+      table: EMPLOYEES
+      columns: [EMP_ID, FIRST_NAME, SALARY]
+    target:
+      table: employees
+      columns: [emp_id, first_name, salary]

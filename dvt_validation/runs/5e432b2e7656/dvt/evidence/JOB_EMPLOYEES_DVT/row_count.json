@@ -1,0 +1,11 @@
+{
+  "check_id": "JOB_EMPLOYEES_DVT_row_count",
+  "job": "JOB_EMPLOYEES_DVT",
+  "check_type": "row_count",
+  "status": "FAILED",
+  "expected": 0,
+  "actual": 2,
+  "difference": 2,
+  "message": "Row count mismatch: source=0 target=2.",
+  "duration_ms": 155
+}

@@ -1,0 +1,94 @@
+{
+  "run_id": "63317884e7e0",
+  "status": "FAILED",
+  "stage": "conf_validation",
+  "summary": {
+    "total_checks": 6,
+    "passed": 0,
+    "failed": 6,
+    "warnings": 0
+  },
+  "problems": [
+    {
+      "type": "MISSING_SOURCE",
+      "severity": "ERROR",
+      "message": "Data job 'source' has no source block.",
+      "job": "ST:source",
+      "file_a": "job.conf",
+      "path_a": "job.source.source",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    },
+    {
+      "type": "MISSING_SINK",
+      "severity": "ERROR",
+      "message": "Data job 'source' has no sink JDBC block.",
+      "job": "ST:source",
+      "file_a": "job.conf",
+      "path_a": "job.source.sink",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    },
+    {
+      "type": "MISSING_SOURCE",
+      "severity": "ERROR",
+      "message": "Data job 'transform' has no source block.",
+      "job": "ST:transform",
+      "file_a": "job.conf",
+      "path_a": "job.transform.source",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    },
+    {
+      "type": "MISSING_SINK",
+      "severity": "ERROR",
+      "message": "Data job 'transform' has no sink JDBC block.",
+      "job": "ST:transform",
+      "file_a": "job.conf",
+      "path_a": "job.transform.sink",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    },
+    {
+      "type": "MISSING_SOURCE",
+      "severity": "ERROR",
+      "message": "Data job 'sink' has no source block.",
+      "job": "ST:sink",
+      "file_a": "job.conf",
+      "path_a": "job.sink.source",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    },
+    {
+      "type": "MISSING_SINK",
+      "severity": "ERROR",
+      "message": "Data job 'sink' has no sink JDBC block.",
+      "job": "ST:sink",
+      "file_a": "job.conf",
+      "path_a": "job.sink.sink",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "conf_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

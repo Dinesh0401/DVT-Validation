@@ -88,6 +88,11 @@ def test_zip(zip_path: Path):
     report_text = r3.text
     print(f"  GET /api/preflight/{run_id}/report -> HTTP 200 OK ({len(report_text)} bytes Markdown)")
 
+    # ---- Download ZIP archive ----
+    r4 = client.get(f"/api/preflight/{run_id}/zip")
+    assert r4.status_code == 200, f"GET /{run_id}/zip failed with {r4.status_code}"
+    print(f"  GET /api/preflight/{run_id}/zip -> HTTP 200 OK ({len(r4.content)} bytes ZIP)")
+
 
 if __name__ == "__main__":
     zips = sorted(INPUT_DIR.glob("*.zip"))

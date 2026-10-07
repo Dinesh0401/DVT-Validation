@@ -1,0 +1,82 @@
+{
+  "run_id": "56dcabdf962a",
+  "status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 5,
+    "passed": 0,
+    "failed": 3,
+    "warnings": 2
+  },
+  "problems": [
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "TARGET_TABLE_MISMATCH",
+      "severity": "ERROR",
+      "message": "Target table differs: contract='tbl_inventory_v2', SeaTunnel='wrong_table_name'.",
+      "job": "JOB_INV",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_INV.target",
+      "file_b": "job.conf",
+      "path_b": "sink.table",
+      "expected": "tbl_inventory_v2",
+      "actual": "wrong_table_name",
+      "stage": "cross_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'QTY' is missing from SeaTunnel source projection.",
+      "job": "JOB_INV",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_INV.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "QTY",
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'SKU' is missing from SeaTunnel source projection.",
+      "job": "JOB_INV",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_INV.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "SKU",
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

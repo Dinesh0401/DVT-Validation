@@ -1,0 +1,109 @@
+{
+  "run_id": "a01eea52d8f0",
+  "version": "1.0",
+  "generated_at": "2026-10-06T12:13:08.785243+00:00",
+  "validations": [
+    {
+      "job_id": "JOB-sports_customers",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.CUSTOMERS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.customers"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    },
+    {
+      "job_id": "JOB-sports_inventory",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.INVENTORY"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.inventory"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    },
+    {
+      "job_id": "JOB-sports_order_items",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.ORDER_ITEMS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.order_items"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    },
+    {
+      "job_id": "JOB-sports_orders",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.ORDERS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.orders"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    },
+    {
+      "job_id": "JOB-sports_payments",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.PAYMENTS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.payments"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    },
+    {
+      "job_id": "JOB-sports_products",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "SPORTS.PRODUCTS"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.products"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

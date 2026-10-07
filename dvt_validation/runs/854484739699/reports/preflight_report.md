@@ -1,0 +1,94 @@
+# Preflight Validation Report
+
+**Run ID:** `854484739699`  
+**Generated:** 2026-10-06T11:22:14.580573+00:00  
+
+## Overall Result
+
+❌ **BLOCKED**
+
+## Input Files
+
+| File | Path |
+|------|------|
+| Validation YAML | `contract.yaml` |
+| SeaTunnel .conf | `job.conf` |
+
+## Summary
+
+| Metric | Count |
+|--------|-------|
+| Total checks | 5 |
+| Passed | 1 |
+| Failed | 1 |
+| Warnings | 3 |
+
+> Preflight validation failed. Fix the reported mismatches before migration.
+
+## Problems
+
+### ❌ Errors
+
+#### 1. MISSING_COLUMN_IN_SEATUNNEL
+
+**Job:** `JOB_PAYROLL`  
+**Stage:** cross_validation  
+**Severity:** ERROR  
+
+**Problem:** Contract column 'TAX_DEDUCTION' is missing from SeaTunnel source projection.  
+
+**File A:** `contract.yaml`  
+**Path A:** `job.JOB_PAYROLL.source.columns`  
+**File B:** `job.conf`  
+**Path B:** `source.query`  
+
+**Expected:** `TAX_DEDUCTION`  
+
+### ⚠️ Warnings
+
+#### 1. MISSING_ENGINE
+
+**Stage:** contract_validation  
+**Severity:** WARNING  
+
+**Problem:** Validation contract does not specify an engine name.  
+
+**File A:** `contract.yaml`  
+**Path A:** `engine.name`  
+
+
+#### 2. MISSING_CONVENTION
+
+**Stage:** contract_validation  
+**Severity:** WARNING  
+
+**Problem:** Validation contract does not have a 'convention' section.  
+
+**File A:** `contract.yaml`  
+**Path A:** `convention`  
+
+
+#### 3. MISSING_ACQUISITION
+
+**Stage:** contract_validation  
+**Severity:** WARNING  
+
+**Problem:** Validation contract does not specify an acquisition mode.  
+
+**File A:** `contract.yaml`  
+**Path A:** `acquisition`  
+
+
+### ℹ️ Information
+
+#### 1. TRANSFORM_CHAIN_INFO
+
+**Job:** `JOB_PAYROLL`  
+**Stage:** cross_validation  
+**Severity:** INFO  
+
+**Problem:** SeaTunnel transform: src_sal → sink_sal (query: SELECT EMP_ID, SALARY, BONUS FROM src_sal).  
+
+**File B:** `job.conf`  
+**Path B:** `transform.SQL`  
+

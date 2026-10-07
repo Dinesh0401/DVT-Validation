@@ -1,0 +1,69 @@
+{
+  "run_id": "540b7cbed82c",
+  "status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 4,
+    "passed": 1,
+    "failed": 1,
+    "warnings": 2
+  },
+  "problems": [
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_COLUMN_IN_SEATUNNEL",
+      "severity": "ERROR",
+      "message": "Contract column 'TAX_DEDUCTION' is missing from SeaTunnel source projection.",
+      "job": "JOB_PAYROLL",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_PAYROLL.source.columns",
+      "file_b": "job.conf",
+      "path_b": "source.query",
+      "expected": "TAX_DEDUCTION",
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_sal → sink_sal (query: SELECT EMP_ID, SALARY, BONUS FROM src_sal).",
+      "job": "JOB_PAYROLL",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "job.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

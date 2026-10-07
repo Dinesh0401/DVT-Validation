@@ -1,0 +1,15 @@
+
+version: "1.0"
+engine:
+  name: duckdb
+jobs:
+  - id: JOB_SCN
+    scn_snapshot:
+      required: true
+      start_scn: 12345678
+    source:
+      table: TRANSACTIONS
+      columns: [TX_ID, AMOUNT]
+    target:
+      table: transactions
+      columns: [tx_id, amount]

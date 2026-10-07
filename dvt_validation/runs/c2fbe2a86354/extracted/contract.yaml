@@ -1,0 +1,15 @@
+
+version: "1.0"
+engine:
+  name: duckdb
+convention:
+  naming: standard
+acquisition: snapshot
+jobs:
+  - id: JOB_001
+    source:
+      table: DEPARTMENTS
+      columns: [DEPT_ID, DEPT_NAME, MANAGER_ID]
+    target:
+      table: departments
+      columns: [dept_id, dept_name, manager_id]

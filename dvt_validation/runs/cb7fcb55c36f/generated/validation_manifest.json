@@ -1,0 +1,39 @@
+{
+  "run_id": "cb7fcb55c36f",
+  "generated_at": "2026-10-06T11:24:27.322642+00:00",
+  "stage": "preflight",
+  "preflight_status": "BLOCKED",
+  "can_execute_seatunnel": false,
+  "total_jobs": 1,
+  "jobs": [
+    {
+      "job_id": "JOB_INV",
+      "source": {
+        "engine": "oracle",
+        "schema": "public",
+        "table": "INVENTORY",
+        "columns": [
+          "SKU",
+          "QTY"
+        ],
+        "projection_sql": null,
+        "snapshot_binding": null
+      },
+      "target": {
+        "engine": "postgresql",
+        "schema": "public",
+        "table": "tbl_inventory_v2",
+        "columns": [
+          "sku",
+          "qty"
+        ]
+      },
+      "checks": [
+        "schema",
+        "row_count",
+        "column"
+      ],
+      "transform_count": 0
+    }
+  ]
+}

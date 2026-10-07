@@ -1,0 +1,86 @@
+{
+  "run_id": "5cfcfb2bd875",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Source and target satisfy the validation contract.",
+  "summary": {
+    "total_checks": 4,
+    "passed": 2,
+    "failed": 2
+  },
+  "tables": {
+    "JOB_EMPLOYEES_DVT": {
+      "job_id": "JOB_EMPLOYEES_DVT",
+      "source": "public.EMPLOYEES",
+      "target": "public.employees",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_schema",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "schema",
+          "status": "FAILED",
+          "expected": [
+            "first_name",
+            "salary",
+            "emp_id"
+          ],
+          "actual": [
+            "first_name",
+            "salary",
+            "employee_id"
+          ],
+          "problems": [
+            {
+              "type": "MISSING_COLUMN",
+              "expected": "emp_id",
+              "actual": "Column missing in PostgreSQL target table"
+            },
+            {
+              "type": "EXTRA_COLUMN",
+              "expected": null,
+              "actual": "Column 'employee_id' exists in PostgreSQL target but not in contract"
+            }
+          ],
+          "message": "Schema validation failed with 2 issues.",
+          "duration_ms": 79
+        },
+        {
+          "check_id": "JOB_EMPLOYEES_DVT_row_count",
+          "job": "JOB_EMPLOYEES_DVT",
+          "check_type": "row_count",
+          "status": "FAILED",
+          "expected": 0,
+          "actual": 2,
+          "difference": 2,
+          "message": "Row count mismatch: source=0 target=2.",
+          "duration_ms": 145
+        }
+      ]
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 281
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 80
+    }
+  ]
+}

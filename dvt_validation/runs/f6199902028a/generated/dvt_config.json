@@ -1,0 +1,24 @@
+{
+  "run_id": "f6199902028a",
+  "version": "1.0",
+  "generated_at": "2026-10-06T11:36:49.348006+00:00",
+  "validations": [
+    {
+      "job_id": "JOB_PAYROLL",
+      "source": {
+        "connection": "oracle_source",
+        "relation": "PUBLIC.SALARIES"
+      },
+      "target": {
+        "connection": "postgresql_target",
+        "relation": "public.salaries"
+      },
+      "validations": {
+        "schema": true,
+        "row_count": true,
+        "column_values": true,
+        "null_check": true
+      }
+    }
+  ]
+}

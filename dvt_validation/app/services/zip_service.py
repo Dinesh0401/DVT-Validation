@@ -25,12 +25,13 @@ from app.models.preflight_models import Problem, Severity
 
 
 def _make_run_dir(run_id: str) -> dict[str, Path]:
-    """Create ``runs/<run_id>/{uploaded,extracted,reports}`` and return paths."""
+    """Create ``runs/<run_id>/{uploaded,extracted,generated,reports}`` and return paths."""
     base = RUNS_DIR / run_id
     dirs = {
         "base": base,
         "uploaded": base / "uploaded",
         "extracted": base / "extracted",
+        "generated": base / "generated",
         "reports": base / "reports",
     }
     for d in dirs.values():

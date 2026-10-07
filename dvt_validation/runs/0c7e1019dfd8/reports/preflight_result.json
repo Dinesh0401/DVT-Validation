@@ -1,0 +1,81 @@
+{
+  "run_id": "0c7e1019dfd8",
+  "status": "FAILED",
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 5,
+    "passed": 0,
+    "failed": 1,
+    "warnings": 4
+  },
+  "problems": [
+    {
+      "type": "MISSING_ENGINE",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an engine name.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "engine.name",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_CONVENTION",
+      "severity": "WARNING",
+      "message": "Validation contract does not have a 'convention' section.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "convention",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "MISSING_ACQUISITION",
+      "severity": "WARNING",
+      "message": "Validation contract does not specify an acquisition mode.",
+      "job": null,
+      "file_a": "contract.yaml",
+      "path_a": "acquisition",
+      "file_b": null,
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "contract_validation"
+    },
+    {
+      "type": "UNMATCHED_YAML_JOB",
+      "severity": "ERROR",
+      "message": "Contract job 'JOB_PAYROLL' has no matching SeaTunnel job definition.",
+      "job": "JOB_PAYROLL",
+      "file_a": "contract.yaml",
+      "path_a": "job.JOB_PAYROLL",
+      "file_b": "job.conf",
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "EXTRA_SEATUNNEL_JOB",
+      "severity": "WARNING",
+      "message": "SeaTunnel job 'ST:default' has no matching contract job.",
+      "job": "ST:default",
+      "file_a": "job.conf",
+      "path_a": "job.ST:default",
+      "file_b": "contract.yaml",
+      "path_b": null,
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation failed. Fix the reported mismatches before migration.",
+  "yaml_file": "contract.yaml",
+  "conf_file": "job.conf"
+}

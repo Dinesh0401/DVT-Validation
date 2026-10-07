@@ -1,0 +1,16 @@
+
+version: "1.0"
+source:
+  database_type: Oracle
+  schema: HR_APP
+target:
+  database_type: PostgreSQL
+  schema: hr_public
+jobs:
+  - id: JOB_001
+    source:
+      table: DEPARTMENTS
+      columns: [DEPT_ID, DEPT_NAME, MANAGER_ID]
+    target:
+      table: departments
+      columns: [dept_id, dept_name, manager_id]

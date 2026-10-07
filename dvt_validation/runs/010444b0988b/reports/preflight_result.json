@@ -1,0 +1,95 @@
+{
+  "run_id": "010444b0988b",
+  "status": "READY",
+  "can_execute_seatunnel": true,
+  "stage": "preflight",
+  "summary": {
+    "total_checks": 6,
+    "passed": 6,
+    "failed": 0,
+    "warnings": 0
+  },
+  "problems": [
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_customers → sink_public_customers (query: SELECT * FROM src_public_customers).",
+      "job": "JOB-sports_customers",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_inventory → sink_public_inventory (query: SELECT * FROM src_public_inventory).",
+      "job": "JOB-sports_inventory",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_order_items → sink_public_order_items (query: SELECT * FROM src_public_order_items).",
+      "job": "JOB-sports_order_items",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_orders → sink_public_orders (query: SELECT * FROM src_public_orders).",
+      "job": "JOB-sports_orders",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_payments → sink_public_payments (query: SELECT * FROM src_public_payments).",
+      "job": "JOB-sports_payments",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    },
+    {
+      "type": "TRANSFORM_CHAIN_INFO",
+      "severity": "INFO",
+      "message": "SeaTunnel transform: src_public_products → sink_public_products (query: SELECT * FROM src_public_products).",
+      "job": "JOB-sports_products",
+      "file_a": null,
+      "path_a": null,
+      "file_b": "seatunnel.conf",
+      "path_b": "transform.SQL",
+      "expected": null,
+      "actual": null,
+      "stage": "cross_validation"
+    }
+  ],
+  "message": "Preflight validation successful. YAML and SeaTunnel configuration are consistent.",
+  "yaml_file": "duckdb.yaml",
+  "conf_file": "seatunnel.conf"
+}
