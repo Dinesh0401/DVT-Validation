@@ -1,0 +1,18 @@
+{
+  "job_id": "JOB-banking_accounts",
+  "target_table": "public.accounts",
+  "summary": "Remediation recommendations generated to align schema and SQL transformation.",
+  "correct_target_schema_ddl": "CREATE TABLE IF NOT EXISTS \"public\".\"accounts\" (\n    \"account_id\" BIGINT NOT NULL,\n    \"customer_id\" BIGINT,\n    \"account_type\" VARCHAR(30),\n    \"balance\" NUMERIC(12, 2),\n    \"branch_code\" VARCHAR(20),\n    \"open_date\" TIMESTAMP,\n    \"status\" VARCHAR(20),\n    \"is_active\" INTEGER,\n    CONSTRAINT \"pk_accounts\" PRIMARY KEY (\"account_id\")\n);",
+  "alter_table_ddl": [],
+  "correct_transform_query": "SELECT\n  \"ACCOUNT_ID\" AS \"account_id\",\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  NULLIF(\"ACCOUNT_TYPE\", '') AS \"account_type\",\n  \"BALANCE\" AS \"balance\",\n  \"OPEN_DATE\" AS \"open_date\",\n  NULLIF(\"STATUS\", '') AS \"status\",\n  \"IS_ACTIVE\" AS \"is_active\",\n  NULLIF(\"BRANCH_CODE\", '') AS \"branch_code\"\nFROM \"BANKING\".\"ACCOUNTS\"",
+  "seatunnel_transform_block": "transform {\n  Sql {\n    source_table_name = \"src_accounts\"\n    result_table_name = \"sink_accounts\"\n    query = \"SELECT \"ACCOUNT_ID\" AS \"account_id\", \"CUSTOMER_ID\" AS \"customer_id\", NULLIF(\"ACCOUNT_TYPE\", '') AS \"account_type\", \"BALANCE\" AS \"balance\", \"OPEN_DATE\" AS \"open_date\", NULLIF(\"STATUS\", '') AS \"status\", \"IS_ACTIVE\" AS \"is_active\", NULLIF(\"BRANCH_CODE\", '') AS \"branch_code\" FROM src_accounts\"\n  }\n}",
+  "data_sync_dml": {
+    "insert_missing_sql": null,
+    "delete_extra_sql": null
+  },
+  "instructions_for_teammate": [
+    "1. To fix target schema: Run 'correct_target_schema_ddl' in PostgreSQL (or execute 'alter_table_ddl' if only missing columns).",
+    "2. To fix data transformation: Update the transformer Python file or SeaTunnel config with 'correct_transform_query'.",
+    "3. In SeaTunnel Zeta configuration: Place 'seatunnel_transform_block' inside the job configuration."
+  ]
+}

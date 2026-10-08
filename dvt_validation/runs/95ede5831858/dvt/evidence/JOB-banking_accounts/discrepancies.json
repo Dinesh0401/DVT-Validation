@@ -1,0 +1,26 @@
+{
+  "key_column": "account_id",
+  "summary": "Detected 2 column value discrepancy/discrepancies across shared records.",
+  "extra_in_target_count": 0,
+  "missing_in_target_count": 0,
+  "extra_in_target_records": [],
+  "missing_in_target_records": [],
+  "sample_value_mismatches": [
+    {
+      "key": {
+        "account_id": "1001"
+      },
+      "column": "open_date",
+      "source_value": "2026-01-01 10:00:00",
+      "target_value": "2026-10-07 16:31:34.854577"
+    },
+    {
+      "key": {
+        "account_id": "1002"
+      },
+      "column": "open_date",
+      "source_value": "2026-01-01 10:00:00",
+      "target_value": "2026-10-07 16:31:34.854577"
+    }
+  ]
+}

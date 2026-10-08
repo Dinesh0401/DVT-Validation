@@ -1,0 +1,165 @@
+{
+  "run_id": "95ede5831858",
+  "stage": "dvt",
+  "status": "FAILED",
+  "overall": "FAILED",
+  "can_execute_dvt": true,
+  "message": "DVT validation failed. Discrepancies detected between source and target tables in 1 check(s).",
+  "summary": {
+    "total_checks": 5,
+    "passed": 4,
+    "failed": 1
+  },
+  "tables": {
+    "JOB-banking_accounts": {
+      "job_id": "JOB-banking_accounts",
+      "source": "banking.ACCOUNTS",
+      "target": "public.accounts",
+      "status": "FAILED",
+      "checks": [
+        {
+          "check_id": "JOB-banking_accounts_schema",
+          "job": "JOB-banking_accounts",
+          "check_type": "schema",
+          "status": "PASSED",
+          "expected": [
+            "open_date",
+            "customer_id",
+            "status",
+            "is_active",
+            "account_id",
+            "branch_code",
+            "balance",
+            "account_type"
+          ],
+          "actual": [
+            "open_date",
+            "customer_id",
+            "status",
+            "is_active",
+            "account_id",
+            "branch_code",
+            "balance",
+            "account_type"
+          ],
+          "problems": [],
+          "message": "Schema validation passed.",
+          "duration_ms": 74
+        },
+        {
+          "check_id": "JOB-banking_accounts_row_count",
+          "job": "JOB-banking_accounts",
+          "check_type": "row_count",
+          "status": "PASSED",
+          "expected": 2,
+          "actual": 2,
+          "difference": 0,
+          "message": "Row count matches.",
+          "duration_ms": 129
+        },
+        {
+          "check_id": "JOB-banking_accounts_digest",
+          "job": "JOB-banking_accounts",
+          "check_type": "digest",
+          "status": "FAILED",
+          "expected": "474d081c1491cdb36aab089fd000f43d6160e16ca86d1a7af20a62dc32be9695",
+          "actual": "d88a764e7376b654534a1936eb3704b856a89b0d372e8c44950140433b48b044",
+          "message": "Data digest mismatch between Oracle source projection and PostgreSQL target.",
+          "duration_ms": 273,
+          "discrepancy_details": {
+            "key_column": "account_id",
+            "summary": "Detected 2 column value discrepancy/discrepancies across shared records.",
+            "extra_in_target_count": 0,
+            "missing_in_target_count": 0,
+            "extra_in_target_records": [],
+            "missing_in_target_records": [],
+            "sample_value_mismatches": [
+              {
+                "key": {
+                  "account_id": "1001"
+                },
+                "column": "open_date",
+                "source_value": "2026-01-01 10:00:00",
+                "target_value": "2026-10-07 16:31:34.854577"
+              },
+              {
+                "key": {
+                  "account_id": "1002"
+                },
+                "column": "open_date",
+                "source_value": "2026-01-01 10:00:00",
+                "target_value": "2026-10-07 16:31:34.854577"
+              }
+            ]
+          }
+        }
+      ],
+      "remediation": {
+        "job_id": "JOB-banking_accounts",
+        "target_table": "public.accounts",
+        "summary": "Remediation recommendations generated to align schema and SQL transformation.",
+        "correct_target_schema_ddl": "CREATE TABLE IF NOT EXISTS \"public\".\"accounts\" (\n    \"account_id\" BIGINT NOT NULL,\n    \"customer_id\" BIGINT,\n    \"account_type\" VARCHAR(30),\n    \"balance\" NUMERIC(12, 2),\n    \"branch_code\" VARCHAR(20),\n    \"open_date\" TIMESTAMP,\n    \"status\" VARCHAR(20),\n    \"is_active\" INTEGER,\n    CONSTRAINT \"pk_accounts\" PRIMARY KEY (\"account_id\")\n);",
+        "alter_table_ddl": [],
+        "correct_transform_query": "SELECT\n  \"ACCOUNT_ID\" AS \"account_id\",\n  \"CUSTOMER_ID\" AS \"customer_id\",\n  NULLIF(\"ACCOUNT_TYPE\", '') AS \"account_type\",\n  \"BALANCE\" AS \"balance\",\n  \"OPEN_DATE\" AS \"open_date\",\n  NULLIF(\"STATUS\", '') AS \"status\",\n  \"IS_ACTIVE\" AS \"is_active\",\n  NULLIF(\"BRANCH_CODE\", '') AS \"branch_code\"\nFROM \"BANKING\".\"ACCOUNTS\"",
+        "seatunnel_transform_block": "transform {\n  Sql {\n    source_table_name = \"src_accounts\"\n    result_table_name = \"sink_accounts\"\n    query = \"SELECT \"ACCOUNT_ID\" AS \"account_id\", \"CUSTOMER_ID\" AS \"customer_id\", NULLIF(\"ACCOUNT_TYPE\", '') AS \"account_type\", \"BALANCE\" AS \"balance\", \"OPEN_DATE\" AS \"open_date\", NULLIF(\"STATUS\", '') AS \"status\", \"IS_ACTIVE\" AS \"is_active\", NULLIF(\"BRANCH_CODE\", '') AS \"branch_code\" FROM src_accounts\"\n  }\n}",
+        "data_sync_dml": {
+          "insert_missing_sql": null,
+          "delete_extra_sql": null
+        },
+        "instructions_for_teammate": [
+          "1. To fix target schema: Run 'correct_target_schema_ddl' in PostgreSQL (or execute 'alter_table_ddl' if only missing columns).",
+          "2. To fix data transformation: Update the transformer Python file or SeaTunnel config with 'correct_transform_query'.",
+          "3. In SeaTunnel Zeta configuration: Place 'seatunnel_transform_block' inside the job configuration."
+        ]
+      },
+      "discrepancy_details": {
+        "key_column": "account_id",
+        "summary": "Detected 2 column value discrepancy/discrepancies across shared records.",
+        "extra_in_target_count": 0,
+        "missing_in_target_count": 0,
+        "extra_in_target_records": [],
+        "missing_in_target_records": [],
+        "sample_value_mismatches": [
+          {
+            "key": {
+              "account_id": "1001"
+            },
+            "column": "open_date",
+            "source_value": "2026-01-01 10:00:00",
+            "target_value": "2026-10-07 16:31:34.854577"
+          },
+          {
+            "key": {
+              "account_id": "1002"
+            },
+            "column": "open_date",
+            "source_value": "2026-01-01 10:00:00",
+            "target_value": "2026-10-07 16:31:34.854577"
+          }
+        ]
+      }
+    }
+  },
+  "global_checks": [
+    {
+      "check_id": "oracle_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "Oracle Database Connected",
+      "actual": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "message": "Successfully connected to Oracle at localhost:1521/FREEPDB1",
+      "duration_ms": 263
+    },
+    {
+      "check_id": "postgres_connectivity",
+      "job": "GLOBAL",
+      "check_type": "connectivity",
+      "status": "PASSED",
+      "expected": "PostgreSQL Database Connected",
+      "actual": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "message": "Successfully connected to PostgreSQL at localhost:5432/migration_exercise",
+      "duration_ms": 66
+    }
+  ]
+}
