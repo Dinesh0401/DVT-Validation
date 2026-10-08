@@ -166,24 +166,17 @@ def generate_seatunnel_transform_conf(
     """
     Generate SeaTunnel HOCON transform block for the transformer engine.
     """
-    clean_src = re.sub(r"[^a-zA-Z0-9_]", "_", source_table).lower()
     clean_tgt = re.sub(r"[^a-zA-Z0-9_]", "_", target_table).lower()
 
-    # Form single-line or compact query for HOCON
-    compact_query = " ".join(query.replace("\n", " ").split())
-    # Replace the physical table reference with the SeaTunnel source node alias
-    compact_query = re.sub(
-        r'FROM\s+["`]?\w+["`]?\.["`]?\w+["`]?',
-        f"FROM src_{clean_tgt}",
-        compact_query,
-        flags=re.IGNORECASE,
-    )
+    # Form clean query without escaped quotes for SeaTunnel SQL transform
+    clean_q = re.sub(r'FROM\s+["`]?\w+["`]?\.["`]?\w+["`]?', f"FROM src_{clean_tgt}", query, flags=re.IGNORECASE)
+    clean_q = clean_q.replace('"', "")  # Strip internal double quotes for clean HOCON formatting
 
     conf = f"""transform {{
   Sql {{
     source_table_name = "src_{clean_tgt}"
     result_table_name = "sink_{clean_tgt}"
-    query = "{compact_query}"
+    query = "{' '.join(clean_q.split())}"
   }}
 }}"""
     return conf
